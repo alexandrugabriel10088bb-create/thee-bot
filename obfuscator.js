@@ -11,6 +11,94 @@ const CUSTOM_VARS = [
     "nil_result", "function_result", "thread_result", "userdata_result"
 ];
 
+const ANTI_TAMPER_LUA = `
+local function antiTamper()
+    local function crash(reason)
+        while true do
+            local stack = {}
+            for i = 1, 20 do
+                local info = debug.getinfo(i, 'S')
+                if info then table.insert(stack, info.short_src or '?') end
+            end
+            error('ANTI-TAMPER:' .. reason .. '|' .. table.concat(stack, '->'), 0)
+        end
+    end
+
+    pcall(function()
+        local mt = getmetatable(_G) or {}
+        if mt.__index or mt.__newindex then
+            if mt.__index then
+                for k, _ in pairs(_G) do
+                    if k == 'env' or k == 'logger' or k == 'spy' or k == 'dump' or k == 'inspect' then
+                        crash('ENV_LOGGER')
+                    end
+                end
+            end
+        end
+    end)
+
+    pcall(function()
+        local ok = pcall(function() return debug.getinfo(1, 'S') end)
+        if not ok then crash('DEBUG_DISABLED') end
+
+        local hooked = false
+        local hookFunc = function() hooked = true end
+        debug.sethook(hookFunc, 'l')
+        debug.sethook()
+        if hooked then crash('HOOK_DETECTED') end
+    end)
+
+    pcall(function()
+        local test = 'test'
+        local buf = buffer.fromstring(test)
+        local result = buffer.tostring(buf)
+        if result ~= test then crash('BUFFER_CORRUPT') end
+    end)
+
+    pcall(function()
+        local services = {
+            'Players','Workspace','ServerScriptService','ReplicatedStorage',
+            'RunService','HttpService','MarketplaceService','DataStoreService',
+            'AssetService','Lighting','SoundService','TweenService'
+        }
+        for _, svc in ipairs(services) do
+            local ok, result = pcall(function() return game:GetService(svc) end)
+            if not ok then crash('SERVICE:' .. svc) end
+            if result and type(result) ~= 'Instance' then crash('SERVICE_INVALID:' .. svc) end
+        end
+    end)
+
+    pcall(function()
+        local co = coroutine.create(function() coroutine.yield(1) end)
+        local ok, result = coroutine.resume(co)
+        if not ok or result ~= 1 then crash('COROUTINE_FAIL') end
+    end)
+
+    pcall(function()
+        local funcs = {
+            'pcall','xpcall','error','assert','type',
+            'rawget','rawset','next','pairs','ipairs',
+            'select','tonumber','tostring','string','table',
+            'math','bit32','coroutine','task','game','Instance'
+        }
+        for _, f in ipairs(funcs) do
+            if type(_G[f]) ~= 'function' and type(_G[f]) ~= 'table' then
+                crash('FUNC_MISS:' .. f)
+            end
+        end
+    end)
+
+    return true
+end
+
+local protected, err = pcall(antiTamper)
+if not protected then
+    while true do
+        error('PROTECTION_FAILED: ' .. tostring(err), 0)
+    end
+end
+`;
+
 function generateCustomName() {
     const base = CUSTOM_VARS[Math.floor(Math.random() * CUSTOM_VARS.length)];
     const suffix = Math.floor(Math.random() * 999999);
@@ -116,7 +204,7 @@ function obfuscate(sourceCode) {
     }
 
     const vm = buildTrueVM(payloadToProtect);
-    const finalCode = `${HEADER} ${vm}`.replace(/\s+/g, " ").trim();
+    const finalCode = `${HEADER} ${ANTI_TAMPER_LUA} ${vm}`.replace(/\s+/g, " ").trim();
     return finalCode;
 }
 
