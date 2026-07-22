@@ -1,15 +1,11 @@
 # Lua Obfuscation Bot for Discord
 
-A Discord bot that obfuscates Lua code using **Normal**, **Hard**, **Max**, or fully **Custom** extreme techniques.
+A Discord bot that obfuscates Lua code using a single heavy-duty obfuscation layer.
 
 ## Features
 
-- `/obf` — Obfuscate Lua code with four modes:
-  - **Normal** — Low/Medium aggressiveness
-  - **Hard** — High aggressiveness
-  - **Max** — Applies all extreme techniques at once
-  - **Custom** — Select individual extreme techniques from a dropdown menu
-- `/upload` — Upload code to [Pastefy](https://pastefy.app)
+- `/obf` — Paste Lua code or attach a `.lua` file to obfuscate it in one step.
+- `/upload` — Upload code to [Pastefy](https://pastefy.app).
 
 ## Tech stack
 
@@ -31,15 +27,13 @@ npm start
 | Variable | Description |
 |----------|-------------|
 | `TOKEN` | Discord bot token (from the [Discord Developer Portal](https://discord.com/developers/applications)) |
-| `PASTEFY_API_KEY` | Optional — for Pastefy uploads |
 
 ## Deploy to Railway
 
 1. Push this repo to GitHub.
 2. In Railway, click **New Project → Deploy from GitHub repo** and select the repo.
-3. Add the environment variables in the Railway dashboard:
+3. Add the environment variable in the Railway dashboard:
    - `TOKEN`
-   - `PASTEFY_API_KEY`
 4. Railway will detect the `Procfile` and run the worker.
 
 Or deploy with the Railway CLI:
@@ -56,9 +50,7 @@ railway up
 ```
 .
 ├── index.js        # Bot entry point and Discord UI
-├── normal.js       # Normal obfuscator
-├── hard.js         # Hard obfuscator
-├── custom.js       # Max + Custom extreme techniques
+├── obfuscator.js   # Obfuscation engine
 ├── package.json
 ├── Procfile
 ├── railway.json
