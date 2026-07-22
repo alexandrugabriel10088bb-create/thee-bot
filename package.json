@@ -1,6 +1,6 @@
 {
   "name": "lua-obf-bot",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Discord Lua obfuscation bot — Normal / Hard / Max / Custom",
   "main": "index.js",
   "scripts": {
