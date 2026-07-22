@@ -1,7 +1,6 @@
 const HEADER = `--[[ this code it's protected by vmmer obfoscator ]]`;
 
 // ==================== VARIABLES PERSONALIZADAS ====================
-// Puedes modificar estos arrays con tus propios nombres
 const CUSTOM_VARS = [
     "data", "temp", "result", "value", "index", "count", "total", "amount",
     "position", "status", "flags", "config", "cache", "buffer", "stream",
@@ -107,10 +106,8 @@ end
 // ==================== FUNCIONES AUXILIARES ====================
 
 function generateCustomName() {
-    // Mezcla palabras personalizadas con números aleatorios
     const base = CUSTOM_VARS[Math.floor(Math.random() * CUSTOM_VARS.length)];
     const suffix = Math.floor(Math.random() * 999999);
-    // A veces añade prefijos como "get_", "set_", "is_", etc.
     const prefixes = ["", "get_", "set_", "is_", "has_", "on_", "do_"];
     const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
     return prefix + base + "_" + suffix;
@@ -127,41 +124,14 @@ function pickHandlers(count) {
   return result;
 }
 
-function runtimeString(str) {
-  return `string.char(${str.split('').map(c => heavyMath(c.charCodeAt(0))).join(',')})`;
-}
-
-function applyCFF(blocks) {
-  const stateVar = generateCustomName();
-  let lua = `local ${stateVar}=${heavyMath(1)} while true do `;
-  for (let i = 0; i < blocks.length; i++) {
-    if (i === 0) lua += `if ${stateVar}==${heavyMath(1)} then ${blocks[i]} ${stateVar}=${heavyMath(2)} `;
-    else         lua += `elseif ${stateVar}==${heavyMath(i + 1)} then ${blocks[i]} ${stateVar}=${heavyMath(i + 2)} `;
-  }
-  lua += `elseif ${stateVar}==${heavyMath(blocks.length + 1)} then break end end `;
-  return lua;
-}
-
-function heavyMath(n) {
-  if (Math.random() < 0.2) return n.toString();
-  let a = Math.floor(Math.random() * 5000) + 1000;
-  let b = Math.floor(Math.random() * 100) + 2;
-  let c = Math.floor(Math.random() * 800) + 10;
-  return `(((((${n}+${a})*${b})/${b})-${a})+((${c}*${c})/${c})-${c})`;
-}
-
-function mba() {
-  let n = Math.random() > 0.5 ? 1 : 2, a = Math.floor(Math.random() * 70) + 15, b = Math.floor(Math.random() * 40) + 8;
-  return `((${n}*${a}-${a})/(${b}+1)+${n})`;
-}
-
 function generateJunk(lines = 100) {
   let j = '';
   for (let i = 0; i < lines; i++) {
     const r = Math.random();
-    if (r < 0.2) j += `local ${generateCustomName()}=${heavyMath(Math.floor(Math.random() * 999))} `;
-    else if (r < 0.4) j += `local ${generateCustomName()}=string.char(${heavyMath(Math.floor(Math.random()*255))}) `;
-    else if (r < 0.5) j += `if not(${heavyMath(1)}==${heavyMath(1)}) then local x=1 end `;
+    const varName = generateCustomName();
+    if (r < 0.2) j += `local ${varName}=${Math.floor(Math.random() * 999)} `;
+    else if (r < 0.4) j += `local ${varName}=string.char(${Math.floor(Math.random()*255)}) `;
+    else if (r < 0.5) j += `if not(1==1) then local x=1 end `;
     else if (r < 0.7) {
       const tp = generateCustomName();
       j += `if type(nil)=="number" then while true do local ${tp}=1 end end `;
@@ -192,110 +162,18 @@ function detectAndApplyMappings(code) {
         replacement = v; 
       }
       else if (tech.includes("String to Math")) {
-        replacement = `string.char(${word.split('').map(c => heavyMath(c.charCodeAt(0))).join(',')})`;
+        replacement = `string.char(${word.split('').map(c => c.charCodeAt(0)).join(',')})`;
       }
       else if (tech.includes("Mixed Boolean Arithmetic")) {
-        replacement = `((${mba()}==1 or true)and"${word}")`;
+        const flag = generateCustomName();
+        headers += `local ${flag}=${Math.random() > 0.5 ? 1 : 2};`;
+        replacement = `((${flag}==1 or true)and"${word}")`;
       }
       regex.lastIndex = 0;
       modified = modified.replace(regex, () => `game[${replacement}]`);
     }
   }
   return headers + modified;
-}
-
-function buildTrueVM(payloadStr) {
-  const STACK = generateCustomName(); 
-  const KEY = generateCustomName(); 
-  const SALT = generateCustomName();
-  const seed = Math.floor(Math.random() * 200) + 50;
-  const saltVal = Math.floor(Math.random() * 250) + 1;
-  
-  let vmCore = `local ${STACK}={} local ${KEY}=${heavyMath(seed)} local ${SALT}=${heavyMath(saltVal)} `;
-  const chunkSize = 15; 
-  let realChunks = [];
-  
-  for(let i = 0; i < payloadStr.length; i += chunkSize) { 
-    realChunks.push(payloadStr.slice(i, i + chunkSize)); 
-  }
-  
-  let poolVars = []; 
-  let realOrder = [];
-  let totalChunks = realChunks.length * 3; 
-  let currentReal = 0; 
-  let globalIndex = 0;
-  
-  for(let i = 0; i < totalChunks; i++) {
-    let memName = generateCustomName(); 
-    poolVars.push(memName);
-    
-    if (currentReal < realChunks.length && (Math.random() > 0.5 || (totalChunks - i) === (realChunks.length - currentReal))) {
-      realOrder.push(i + 1);
-      let chunk = realChunks[currentReal]; 
-      let encryptedBytes = [];
-      
-      for(let j = 0; j < chunk.length; j++) {
-        let enc = (chunk.charCodeAt(j) + seed + (globalIndex * saltVal)) % 256;
-        encryptedBytes.push(heavyMath(enc));
-        globalIndex++;
-      }
-      vmCore += `local ${memName}={${encryptedBytes.join(',')}} `;
-      currentReal++;
-    } else {
-      let fakeBytes = []; 
-      let fakeLen = Math.floor(Math.random() * 20) + 5;
-      for(let j = 0; j < fakeLen; j++) { 
-        fakeBytes.push(heavyMath(Math.floor(Math.random() * 255))); 
-      }
-      vmCore += `local ${memName}={${fakeBytes.join(',')}} `;
-    }
-  }
-  
-  vmCore += `local _pool={${poolVars.join(',')}} local _order={${realOrder.map(n => heavyMath(n)).join(',')}} `;
-  vmCore += `local _gIdx=0 for _, idx in ipairs(_order) do for _, byte in ipairs(_pool[idx]) do `;
-  vmCore += `if type(math.pi)=="string" then ${KEY}=(${KEY}+137)%256 end `;
-  vmCore += `table.insert(${STACK}, string.char(math.floor((byte - ${KEY} - _gIdx * ${SALT}) % 256))) _gIdx=_gIdx+1 end end `;
-  vmCore += `local _e = table.concat(${STACK}) ${STACK}=nil `;
-  
-  const ASSERT     = `getfenv()[${runtimeString("assert")}]`;
-  const LOADSTRING = `getfenv()[${runtimeString("loadstring")}]`;
-  const GAME       = `getfenv()[${runtimeString("game")}]`;
-  const HTTPGET    = runtimeString("HttpGet");
-  
-  if (payloadStr.includes("http")) { 
-    vmCore += `${ASSERT}(${LOADSTRING}(${GAME}[${HTTPGET}](${GAME}, _e)))() `; 
-  } else { 
-    vmCore += `${ASSERT}(${LOADSTRING}(_e))() `; 
-  }
-  return vmCore;
-}
-
-function buildSingleVM(innerCode, handlerCount) {
-  const handlers = pickHandlers(handlerCount);
-  const realIdx  = Math.floor(Math.random() * handlerCount);
-  const DISPATCH = generateCustomName();
-  let out = `local lM={} `;
-  
-  for (let i = 0; i < handlers.length; i++) {
-    if (i === realIdx) { 
-      out += `local ${handlers[i]}=function(lM) local lM=lM; ${generateJunk(5)} ${innerCode} end `; 
-    } else { 
-      out += `local ${handlers[i]}=function(lM) local lM=lM; ${generateJunk(3)} return nil end `; 
-    }
-  }
-  
-  out += `local ${DISPATCH}={`;
-  for (let i = 0; i < handlers.length; i++) { 
-    out += `[${heavyMath(i + 1)}]=${handlers[i]},`; 
-  }
-  out += `} `;
-  
-  const execBlocks = [];
-  for (let i = 0; i < handlers.length; i++) { 
-    execBlocks.push(`${DISPATCH}[${heavyMath(i + 1)}](lM)`); 
-  }
-  out += applyCFF(execBlocks);
-  return out;
 }
 
 function getProtections() {
@@ -338,41 +216,97 @@ function getProtections() {
   return antiDebuggers + codeVaultGuards;
 }
 
-function buildFragileVM(innerCode, depth = 0) {
-  if (depth >= 45) return innerCode;
+// ==================== VM CON VARIABLES PERSONALIZADAS ====================
 
+function buildCustomVM(payloadStr) {
   const vmName = generateCustomName();
-  const handlerCount = Math.floor(Math.random() * 5) + 3;
-  const handlers = pickHandlers(handlerCount);
-  const realIdx = Math.floor(Math.random() * handlerCount);
-  const DISPATCH = generateCustomName();
+  const dataVar = generateCustomName();
+  const execVar = generateCustomName();
+  const resultVar = generateCustomName();
+  
+  let vm = `
+    local ${vmName} = {}
+    local ${dataVar} = [[
+      ${payloadStr}
+    ]]
+    local ${execVar} = loadstring(${dataVar})
+    if ${execVar} then
+      local ${resultVar} = ${execVar}()
+    end
+  `;
+  
+  // Envolver en múltiples capas de funciones con nombres personalizados
+  for (let i = 0; i < 3; i++) {
+    const wrapperName = generateCustomName();
+    const innerVar = generateCustomName();
+    vm = `
+      local ${wrapperName} = function()
+        local ${innerVar} = function()
+          ${vm}
+        end
+        ${innerVar}()
+      end
+      ${wrapperName}()
+    `;
+  }
+  
+  return vm;
+}
 
-  let out = `local ${vmName}={} `;
-  for (let i = 0; i < handlers.length; i++) {
-    if (i === realIdx) {
-      out += `local ${handlers[i]}=function(${vmName}) `;
-      out += `local _chk="${generateCustomName()}" `;
-      out += `if ${vmName}[${heavyMath(1)}]~=nil then error("VM corrupted") end `;
-      out += `${generateJunk(5)} `;
-      out += buildFragileVM(innerCode, depth + 1);
-      out += ` end `;
-    } else {
-      out += `local ${handlers[i]}=function(${vmName}) ${generateJunk(3)} return nil end `;
+function buildTableVM(payloadStr) {
+  const tableName = generateCustomName();
+  const keyName = generateCustomName();
+  const valueName = generateCustomName();
+  const execName = generateCustomName();
+  
+  let vm = `
+    local ${tableName} = {
+      ${generateCustomName()} = [[
+        ${payloadStr}
+      ]],
+      ${generateCustomName()} = function(self)
+        local ${execName} = loadstring(self[${generateCustomName()}])
+        if ${execName} then ${execName}() end
+      end
     }
-  }
+    ${tableName}[${generateCustomName()}]( ${tableName} )
+  `;
+  
+  return vm;
+}
 
-  out += `local ${DISPATCH}={`;
-  for (let i = 0; i < handlers.length; i++) {
-    out += `[${heavyMath(i + 1)}]=${handlers[i]},`;
-  }
-  out += `} `;
-
-  const execBlocks = [];
-  for (let i = 0; i < handlers.length; i++) {
-    execBlocks.push(`${DISPATCH}[${heavyMath(i + 1)}](${vmName})`);
-  }
-  out += applyCFF(execBlocks);
-  return out;
+function buildFlowVM(payloadStr) {
+  const stateVar = generateCustomName();
+  const dataVar = generateCustomName();
+  const execVar = generateCustomName();
+  const step1 = generateCustomName();
+  const step2 = generateCustomName();
+  const step3 = generateCustomName();
+  
+  let vm = `
+    local ${stateVar} = 1
+    local ${dataVar} = [[
+      ${payloadStr}
+    ]]
+    local ${execVar} = loadstring(${dataVar})
+    
+    if ${stateVar} == 1 then
+      local ${step1} = ${execVar}
+      ${stateVar} = 2
+    end
+    
+    if ${stateVar} == 2 then
+      local ${step2} = ${step1}
+      if ${step2} then ${step2}() end
+      ${stateVar} = 3
+    end
+    
+    if ${stateVar} == 3 then
+      local ${step3} = true
+    end
+  `;
+  
+  return vm;
 }
 
 // ==================== FUNCIÓN PRINCIPAL ====================
@@ -388,8 +322,12 @@ function obfuscate(sourceCode) {
   if (match) { payloadToProtect = match[1]; }
   else       { payloadToProtect = detectAndApplyMappings(sourceCode); }
 
-  let vm = buildTrueVM(payloadToProtect);
-  vm = buildFragileVM(vm, 0);
+  // Seleccionar aleatoriamente un tipo de VM
+  const vmType = Math.floor(Math.random() * 3);
+  let vm = "";
+  if (vmType === 0) vm = buildCustomVM(payloadToProtect);
+  else if (vmType === 1) vm = buildTableVM(payloadToProtect);
+  else vm = buildFlowVM(payloadToProtect);
 
   let finalCode = `${HEADER} ${generateJunk(50)} ${protections} ${ANTI_TAMPER_LUA} ${vm}`.replace(/\s+/g, " ").trim();
   
