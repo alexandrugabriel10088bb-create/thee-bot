@@ -14,8 +14,8 @@ const CUSTOM_VARS = [
 
 const HANDLER_POOL = ["KQ","HF","W8","SX","Rj","nT","pL","qZ","mV","xB","yC","wD"];
 
-// ==================== ANTI-TAMPER LUA ====================
-const ANTI_TAMPER_LUA = `
+// ==================== ANTI-TAMPER LUA (INTACTO) ====================
+const ANTI_TAMPER = `
 local function antiTamper()
     local function crash(reason)
         while true do
@@ -114,234 +114,179 @@ function generateCustomName() {
 }
 
 function pickHandlers(count) {
-  const used = new Set();
-  const result = [];
-  while (result.length < count) {
-    const base = HANDLER_POOL[Math.floor(Math.random() * HANDLER_POOL.length)];
-    const name = base + Math.floor(Math.random() * 99);
-    if (!used.has(name)) { used.add(name); result.push(name); }
-  }
-  return result;
+    const used = new Set();
+    const result = [];
+    while (result.length < count) {
+        const base = HANDLER_POOL[Math.floor(Math.random() * HANDLER_POOL.length)];
+        const name = base + Math.floor(Math.random() * 99);
+        if (!used.has(name)) { used.add(name); result.push(name); }
+    }
+    return result;
 }
 
-function generateJunk(lines = 100) {
-  let j = '';
-  for (let i = 0; i < lines; i++) {
-    const r = Math.random();
-    const varName = generateCustomName();
-    if (r < 0.2) j += `local ${varName}=${Math.floor(Math.random() * 999)} `;
-    else if (r < 0.4) j += `local ${varName}=string.char(${Math.floor(Math.random()*255)}) `;
-    else if (r < 0.5) j += `if not(1==1) then local x=1 end `;
-    else if (r < 0.7) {
-      const tp = generateCustomName();
-      j += `if type(nil)=="number" then while true do local ${tp}=1 end end `;
-    } else if (r < 0.85) {
-      const vt = generateCustomName();
-      j += `do local ${vt}={} ${vt}["_"]=1 ${vt}=nil end `;
-    } else {
-      j += `if type(math.pi)=="string" then local _=1 end `;
+function generateJunk(lines = 50) {
+    let j = '';
+    for (let i = 0; i < lines; i++) {
+        const r = Math.random();
+        if (r < 0.2) j += `local ${generateCustomName()}=${Math.floor(Math.random() * 999)} `;
+        else if (r < 0.4) j += `local ${generateCustomName()}=string.char(${Math.floor(Math.random()*255)}) `;
+        else if (r < 0.5) j += `if not(1==1) then local x=1 end `;
+        else if (r < 0.7) {
+            const tp = generateCustomName();
+            j += `if type(nil)=="number" then while true do local ${tp}=1 end end `;
+        } else if (r < 0.85) {
+            const vt = generateCustomName();
+            j += `do local ${vt}={} ${vt}["_"]=1 ${vt}=nil end `;
+        } else {
+            j += `if type(math.pi)=="string" then local _=1 end `;
+        }
     }
-  }
-  return j;
+    return j;
 }
 
 function detectAndApplyMappings(code) {
-  const MAPEO = {
-    "ScreenGui":"Aggressive Renaming","Frame":"String to Math","TextLabel":"Table Indirection",
-    "TextButton":"Mixed Boolean Arithmetic","Humanoid":"Dynamic Junk","Player":"Fake Flow",
-    "RunService":"Virtual Machine","TweenService":"Fake Flow","Players":"Fake Flow"
-  };
-  let modified = code, headers = "";
-  for (const [word, tech] of Object.entries(MAPEO)) {
-    const regex = new RegExp(`\\b${word}\\b`, "g");
-    if (regex.test(modified)) {
-      let replacement = `"${word}"`;
-      if (tech.includes("Aggressive Renaming")) { 
-        const v = generateCustomName(); 
-        headers += `local ${v}="${word}";`; 
-        replacement = v; 
-      }
-      else if (tech.includes("String to Math")) {
-        replacement = `string.char(${word.split('').map(c => c.charCodeAt(0)).join(',')})`;
-      }
-      else if (tech.includes("Mixed Boolean Arithmetic")) {
-        const flag = generateCustomName();
-        headers += `local ${flag}=${Math.random() > 0.5 ? 1 : 2};`;
-        replacement = `((${flag}==1 or true)and"${word}")`;
-      }
-      regex.lastIndex = 0;
-      modified = modified.replace(regex, () => `game[${replacement}]`);
+    const MAPEO = {
+        "ScreenGui":"Aggressive Renaming","Frame":"String to Math","TextLabel":"Table Indirection",
+        "TextButton":"Mixed Boolean Arithmetic","Humanoid":"Dynamic Junk","Player":"Fake Flow",
+        "RunService":"Virtual Machine","TweenService":"Fake Flow","Players":"Fake Flow"
+    };
+    let modified = code, headers = "";
+    for (const [word, tech] of Object.entries(MAPEO)) {
+        const regex = new RegExp(`\\b${word}\\b`, "g");
+        if (regex.test(modified)) {
+            let replacement = `"${word}"`;
+            if (tech.includes("Aggressive Renaming")) { 
+                const v = generateCustomName(); 
+                headers += `local ${v}="${word}";`; 
+                replacement = v; 
+            }
+            else if (tech.includes("String to Math")) {
+                replacement = `string.char(${word.split('').map(c => c.charCodeAt(0)).join(',')})`;
+            }
+            else if (tech.includes("Mixed Boolean Arithmetic")) {
+                const flag = generateCustomName();
+                headers += `local ${flag}=${Math.random() > 0.5 ? 1 : 2};`;
+                replacement = `((${flag}==1 or true)and"${word}")`;
+            }
+            regex.lastIndex = 0;
+            modified = modified.replace(regex, () => `game[${replacement}]`);
+        }
     }
-  }
-  return headers + modified;
+    return headers + modified;
 }
 
 function getProtections() {
-  const antiDebuggers =
-    `local _adT=os.clock() for _=1,150000 do end if os.clock()-_adT>5.0 then while true do end end ` +
-    `if debug~=nil and debug.getinfo then local _i=debug.getinfo(1) if _i.what~="main" and _i.what~="Lua" then while true do end end end ` +
-    `if debug and debug.sethook then debug.sethook(function() while true do end end, "l", 5) end `;
+    const antiDebuggers =
+        `local _adT=os.clock() for _=1,150000 do end if os.clock()-_adT>5.0 then while true do end end ` +
+        `if debug~=nil and debug.getinfo then local _i=debug.getinfo(1) if _i.what~="main" and _i.what~="Lua" then while true do end end end ` +
+        `if debug and debug.sethook then debug.sethook(function() while true do end end, "l", 5) end `;
 
-  const rawTampers = [
-    `if math.pi<3.14 or math.pi>3.15 then _err() end`,
-    `if bit32 and bit32.bxor(10,5)~=15 then _err() end`,
-    `if type(tostring)~="function" then _err() end`,
-    `if not string.match("chk","^c.*k$") then _err() end`,
-    `local _tm1=os.time() local _tm2=os.time() if _tm2<_tm1 then _err() end`,
-    `if math.abs(-10)~=10 then _err() end`,
-    `if string.char(65)~="A" then _err() end`,
-    `if type({})~="table" then _err() end`,
-    `if type(1)~="number" then _err() end`,
-    `if type("a")~="string" then _err() end`,
-    `if type(true)~="boolean" then _err() end`,
-    `if type(nil)~="nil" then _err() end`,
-    `if type(function() end)~="function" then _err() end`,
-    `if type(coroutine.create(function() end))~="thread" then _err() end`,
-    `if type(io)~="userdata" then _err() end`,
-    `if type(game)~="userdata" then _err() end`,
-    `if type(workspace)~="userdata" then _err() end`,
-    `if type(script)~="userdata" then _err() end`,
-    `if type(Instance)~="function" then _err() end`,
-    `if type(getfenv)~="function" then _err() end`,
-    `if type(setfenv)~="function" then _err() end`
-  ];
+    const rawTampers = [
+        `if math.pi<3.14 or math.pi>3.15 then _err() end`,
+        `if bit32 and bit32.bxor(10,5)~=15 then _err() end`,
+        `if type(tostring)~="function" then _err() end`,
+        `if not string.match("chk","^c.*k$") then _err() end`,
+        `local _tm1=os.time() local _tm2=os.time() if _tm2<_tm1 then _err() end`,
+        `if math.abs(-10)~=10 then _err() end`,
+        `if string.char(65)~="A" then _err() end`,
+        `if type({})~="table" then _err() end`,
+        `if type(1)~="number" then _err() end`,
+        `if type("a")~="string" then _err() end`,
+        `if type(true)~="boolean" then _err() end`,
+        `if type(nil)~="nil" then _err() end`,
+        `if type(function() end)~="function" then _err() end`,
+        `if type(coroutine.create(function() end))~="thread" then _err() end`,
+        `if type(io)~="userdata" then _err() end`,
+        `if type(game)~="userdata" then _err() end`,
+        `if type(workspace)~="userdata" then _err() end`,
+        `if type(script)~="userdata" then _err() end`,
+        `if type(Instance)~="function" then _err() end`,
+        `if type(getfenv)~="function" then _err() end`,
+        `if type(setfenv)~="function" then _err() end`
+    ];
 
-  let codeVaultGuards = "";
-  for (const t of rawTampers) {
-    const fnName  = generateCustomName();
-    const errName = generateCustomName();
-    codeVaultGuards += `local ${fnName}=function() local ${errName}=error ${t.replace("_err()", `${errName}("!")`)} end ${fnName}() `;
-  }
-
-  return antiDebuggers + codeVaultGuards;
-}
-
-// ==================== VM CON VARIABLES PERSONALIZADAS ====================
-
-function buildCustomVM(payloadStr) {
-  const vmName = generateCustomName();
-  const dataVar = generateCustomName();
-  const execVar = generateCustomName();
-  const resultVar = generateCustomName();
-  
-  let vm = `
-    local ${vmName} = {}
-    local ${dataVar} = [[
-      ${payloadStr}
-    ]]
-    local ${execVar} = loadstring(${dataVar})
-    if ${execVar} then
-      local ${resultVar} = ${execVar}()
-    end
-  `;
-  
-  // Envolver en múltiples capas de funciones con nombres personalizados
-  for (let i = 0; i < 3; i++) {
-    const wrapperName = generateCustomName();
-    const innerVar = generateCustomName();
-    vm = `
-      local ${wrapperName} = function()
-        local ${innerVar} = function()
-          ${vm}
-        end
-        ${innerVar}()
-      end
-      ${wrapperName}()
-    `;
-  }
-  
-  return vm;
-}
-
-function buildTableVM(payloadStr) {
-  const tableName = generateCustomName();
-  const keyName = generateCustomName();
-  const valueName = generateCustomName();
-  const execName = generateCustomName();
-  
-  let vm = `
-    local ${tableName} = {
-      ${generateCustomName()} = [[
-        ${payloadStr}
-      ]],
-      ${generateCustomName()} = function(self)
-        local ${execName} = loadstring(self[${generateCustomName()}])
-        if ${execName} then ${execName}() end
-      end
+    let codeVaultGuards = "";
+    for (const t of rawTampers) {
+        const fnName = generateCustomName();
+        const errName = generateCustomName();
+        codeVaultGuards += `local ${fnName}=function() local ${errName}=error ${t.replace("_err()", `${errName}("!")`)} end ${fnName}() `;
     }
-    ${tableName}[${generateCustomName()}]( ${tableName} )
-  `;
-  
-  return vm;
+
+    return antiDebuggers + codeVaultGuards;
 }
 
-function buildFlowVM(payloadStr) {
-  const stateVar = generateCustomName();
-  const dataVar = generateCustomName();
-  const execVar = generateCustomName();
-  const step1 = generateCustomName();
-  const step2 = generateCustomName();
-  const step3 = generateCustomName();
-  
-  let vm = `
-    local ${stateVar} = 1
-    local ${dataVar} = [[
-      ${payloadStr}
-    ]]
-    local ${execVar} = loadstring(${dataVar})
+// ==================== HANDLER-BASED VM ====================
+
+function buildHandlerVM(payloadStr) {
+    const handlerCount = Math.floor(Math.random() * 5) + 3;
+    const handlers = pickHandlers(handlerCount);
+    const realIdx = Math.floor(Math.random() * handlerCount);
+    const dispatchTable = generateCustomName();
+    const stateVar = generateCustomName();
+    const dataVar = generateCustomName();
     
-    if ${stateVar} == 1 then
-      local ${step1} = ${execVar}
-      ${stateVar} = 2
-    end
+    let vm = `local ${dataVar}=[[\n${payloadStr}\n]] `;
+    vm += `local ${dispatchTable}={} `;
     
-    if ${stateVar} == 2 then
-      local ${step2} = ${step1}
-      if ${step2} then ${step2}() end
-      ${stateVar} = 3
-    end
+    // Crear handlers
+    for (let i = 0; i < handlers.length; i++) {
+        if (i === realIdx) {
+            vm += `local ${handlers[i]}=function() `;
+            vm += `local exec=loadstring(${dataVar}) `;
+            vm += `if exec then exec() end `;
+            vm += `end `;
+        } else {
+            vm += `local ${handlers[i]}=function() `;
+            vm += `local ${generateCustomName()}=${generateCustomName()} `;
+            vm += `return nil `;
+            vm += `end `;
+        }
+        vm += `${dispatchTable}[${i + 1}]=${handlers[i]} `;
+    }
     
-    if ${stateVar} == 3 then
-      local ${step3} = true
-    end
-  `;
-  
-  return vm;
+    // Ejecutar handlers secuencialmente
+    vm += `local ${stateVar}=1 `;
+    vm += `while true do `;
+    vm += `if ${stateVar}==1 then ${dispatchTable}[1]() ${stateVar}=2 `;
+    vm += `elseif ${stateVar}==2 then ${dispatchTable}[2]() ${stateVar}=3 `;
+    vm += `elseif ${stateVar}==3 then ${dispatchTable}[3]() ${stateVar}=4 `;
+    vm += `elseif ${stateVar}==4 then ${dispatchTable}[4]() ${stateVar}=5 `;
+    vm += `elseif ${stateVar}==5 then ${dispatchTable}[5]() ${stateVar}=6 `;
+    vm += `elseif ${stateVar}==6 then ${dispatchTable}[6]() ${stateVar}=7 `;
+    vm += `elseif ${stateVar}==7 then ${dispatchTable}[7]() ${stateVar}=8 `;
+    vm += `elseif ${stateVar}==8 then break end end `;
+    
+    return vm;
 }
 
 // ==================== FUNCIÓN PRINCIPAL ====================
 
 function obfuscate(sourceCode) {
-  if (!sourceCode) return '-- Error: No Source';
+    if (!sourceCode) return '-- Error: No Source';
 
-  const protections = getProtections();
+    const protections = getProtections();
 
-  let payloadToProtect = "";
-  const isLoadstringRegex = /loadstring\s*\(\s*game\s*:\s*HttpGet\s*\(\s*["']([^"']+)["']\s*\)\s*\)\s*\(\s*\)/i;
-  const match = sourceCode.match(isLoadstringRegex);
-  if (match) { payloadToProtect = match[1]; }
-  else       { payloadToProtect = detectAndApplyMappings(sourceCode); }
+    let payloadToProtect = "";
+    const isLoadstringRegex = /loadstring\s*\(\s*game\s*:\s*HttpGet\s*\(\s*["']([^"']+)["']\s*\)\s*\)\s*\(\s*\)/i;
+    const match = sourceCode.match(isLoadstringRegex);
+    if (match) { payloadToProtect = match[1]; }
+    else { payloadToProtect = detectAndApplyMappings(sourceCode); }
 
-  // Seleccionar aleatoriamente un tipo de VM
-  const vmType = Math.floor(Math.random() * 3);
-  let vm = "";
-  if (vmType === 0) vm = buildCustomVM(payloadToProtect);
-  else if (vmType === 1) vm = buildTableVM(payloadToProtect);
-  else vm = buildFlowVM(payloadToProtect);
+    const vm = buildHandlerVM(payloadToProtect);
 
-  let finalCode = `${HEADER} ${generateJunk(50)} ${protections} ${ANTI_TAMPER_LUA} ${vm}`.replace(/\s+/g, " ").trim();
-  
-  const targetSize = 246 * 1024;
-  let currentSize = Buffer.byteLength(finalCode, 'utf8');
+    let finalCode = `${HEADER} ${generateJunk(30)} ${protections} ${ANTI_TAMPER} ${vm}`.replace(/\s+/g, " ").trim();
+    
+    const targetSize = 10 * 1024;
+    let currentSize = Buffer.byteLength(finalCode, 'utf8');
 
-  if (currentSize < targetSize) {
-    const neededBytes = targetSize - currentSize;
-    const junkPerLine = 50;
-    const additionalLines = Math.ceil(neededBytes / junkPerLine);
-    finalCode = `${HEADER} ${generateJunk(50 + additionalLines)} ${protections} ${ANTI_TAMPER_LUA} ${vm}`.replace(/\s+/g, " ").trim();
-  }
+    if (currentSize < targetSize) {
+        const neededBytes = targetSize - currentSize;
+        const junkPerLine = 50;
+        const additionalLines = Math.ceil(neededBytes / junkPerLine);
+        finalCode = `${HEADER} ${generateJunk(30 + additionalLines)} ${protections} ${ANTI_TAMPER} ${vm}`.replace(/\s+/g, " ").trim();
+    }
 
-  return finalCode;
+    return finalCode;
 }
 
 module.exports = { obfuscate };
