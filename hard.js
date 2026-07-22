@@ -1,15 +1,14 @@
 // ============================================================
-// HARD OBFUSCATOR — Técnicas de agresividad Media/Alta
-// Técnicas: Renombrado agresivo (_a123B/__b456C), Matemáticas
-//           complejas, Junk code extenso (150-200 líneas),
-//           CFF avanzado, MBA, VM multicapa (30 handlers),
-//           Anti-debug, Anti-timing (5-6s), Anti-getupvalue,
-//           8 comprobaciones de integridad
+// HARD OBFUSCATOR — Medium/High aggressiveness techniques
+// Techniques: Aggressive renaming (_a123B/__b456C), Complex math,
+//             Extensive junk code (150-200 lines), Advanced CFF,
+//             MBA, Multilayer VM (30 handlers), Anti-debug,
+//             Anti-timing (5-6s), Anti-getupvalue, 8 integrity checks
 // ============================================================
 
 'use strict';
 
-// ── Helpers ──────────────────────────────────────────────────
+// ── Base helpers ─────────────────────────────────────────────
 
 function stripLuaComments(code) {
     code = code.replace(/--\[\[[\s\S]*?\]\]/g, '');
@@ -25,13 +24,11 @@ function randChar(pool) {
     return pool[Math.floor(Math.random() * pool.length)];
 }
 
-/** Aggressive name: _a123B or __b456C style, 8-12 chars */
 function generateAggressiveName(seed) {
     const prefix = Math.random() < 0.5 ? '_' : '__';
     const letter1 = CHARS_LOWER[seed % CHARS_LOWER.length];
     const digits = String(seed * 137 + 31).padStart(3, '0').slice(-3);
     const letter2 = CHARS_UPPER[(seed * 7 + 5) % CHARS_UPPER.length];
-    // Add 1-3 random suffix chars
     const suffixLen = 1 + (seed % 3);
     let suffix = '';
     for (let i = 0; i < suffixLen; i++) {
@@ -63,38 +60,23 @@ function renameVarsAggressive(code) {
     return code;
 }
 
-/**
- * Complex math: ((((n+1000)*50)/50)-1000)+((50*50)/50)
- * Wraps each integer literal.
- */
 function obfuscateNumbersComplex(code) {
     return code.replace(/\b(\d+)\b/g, (full, numStr) => {
         const n = parseInt(numStr, 10);
-        const a = Math.floor(Math.random() * 900) + 100; // 100-999
-        const b = Math.floor(Math.random() * 40) + 10;   // 10-49
-        // ((((n+a)*b)/b)-a)  ≡  n
+        const a = Math.floor(Math.random() * 900) + 100;
+        const b = Math.floor(Math.random() * 40) + 10;
         return `((((${n}+${a})*${b})/${b})-${a})`;
     });
 }
 
-/**
- * Mixed Boolean Arithmetic: ((n*a-a)/(b+1)+n+((c*c)/c))
- * where c≠0 to keep valid.
- */
 function applyMBA(code) {
     return code.replace(/\b(\d+)\b/g, (full, numStr) => {
         const n = parseInt(numStr, 10);
-        const a = Math.floor(Math.random() * 10) + 2;
         const b = Math.floor(Math.random() * 10) + 1;
-        const c = Math.floor(Math.random() * 5) + 2;
-        // Simplified MBA that still evaluates to n:
-        // ((n*a-a)/(a-1)) is n when simplified
-        // Use: (((n*(b+1))-(n*b)) which = n
-        return `(((${n}*(${b}+(1-1)+1))-(${n}*${b})))`;
+        return `(((${n}*(${b}+1))-(${n}*${b})))`;
     });
 }
 
-/** 30-layer fake VM handlers + real execution wrapper */
 function buildMultilayerVM(code) {
     const handlers = [];
     const tableEntries = [];
@@ -143,7 +125,6 @@ function buildFakeHandlerBody(i) {
     return lines.join('\n');
 }
 
-/** Advanced CFF: state machine with multiple false states */
 function advancedCFF(code) {
     const codeLines = code.split('\n').map(l => '        ' + l).join('\n');
     return `
@@ -167,7 +148,6 @@ end
 `;
 }
 
-/** 150-200 lines of junk code with varied patterns */
 function injectExtendedJunk(code, minLines, maxLines) {
     const count = minLines + Math.floor(Math.random() * (maxLines - minLines + 1));
     const top = [];
@@ -176,8 +156,9 @@ function injectExtendedJunk(code, minLines, maxLines) {
 
     const patterns = [
         (i) => `local ${generateAggressiveName(i + 200)} = ${i * 7 + 3}`,
-        (i) => `local ${generateAggressiveName(i + 300)} = {}; ${generateAggressiveName(i + 300)}["k${i}"] = ${i + 1}`,
-        (i) => `local function ${generateAggressiveName(i + 400)}()\n    local _r = ${i}\n    for _i = 1, 0 do _r = _r + 1 end\n    return _r\nend`,
+        (i) => `local ${generateAggressiveName(i + 300)} = {}`,
+        (i) => `${generateAggressiveName(i + 200)} = ${generateAggressiveName(i + 200)} or {}`,
+        (i) => `local function ${generateAggressiveName(i + 400)}()\n    return ${i}\nend`,
         (i) => `if (${i} == ${i + 1}) then local ${generateAggressiveName(i + 500)} = true end`,
         (i) => `do\n    local ${generateAggressiveName(i + 600)} = string.format("%d", ${i})\nend`,
         (i) => `local ${generateAggressiveName(i + 700)} = math.floor(${i + 0.5})`,
@@ -207,27 +188,22 @@ function addAntiDebug(code) {
     const antiDebug = `
 local _dbg = debug
 if _dbg then
-    local _getinfo = _dbg.getinfo
-    local _sethook = _dbg.sethook
-    local _getupvalue = _dbg.getupvalue
-    if _getinfo and _getinfo(1, "S") then
-        local _src = _getinfo(1, "S").source or ""
-        if _src:find("=") == 1 then
-            -- allow executor injected scripts
+    if _dbg.sethook then
+        local _hookTriggered = false
+        local _prev = _dbg.sethook(function() _hookTriggered = true end, "l", 1)
+        _dbg.sethook()
+        if _hookTriggered then error("debug.sethook hook detected", 0) end
+    end
+    if _dbg.getinfo then
+        local _inf = _dbg.getinfo(1, "Sl")
+        if _inf and _inf.currentline and _inf.currentline < 0 then
+            error("debug.getinfo suspicious", 0)
         end
     end
-    -- Block sethook (anti-hook detection)
-    if _sethook then
-        local _hook_test = false
-        _sethook(function() _hook_test = true end, "l", 1)
-        _sethook()
-        if _hook_test then error("debug hook detected", 0) end
-    end
-    -- Block getupvalue
-    if _getupvalue then
-        local function _sentinel() return 0xDEAD end
-        local _v = _getupvalue(_sentinel, 1)
-        if _v ~= nil then error("upvalue inspection detected", 0) end
+    if _dbg.getupvalue then
+        local function _sentinel_fn() return 0xBEEF end
+        local _n, _v = _dbg.getupvalue(_sentinel_fn, 1)
+        if _n ~= nil then error("debug.getupvalue detected", 0) end
     end
 end
 `;
@@ -235,7 +211,7 @@ end
 }
 
 function addAntiTimingHard(code) {
-    const maxSec = 5 + Math.floor(Math.random() * 2); // 5 or 6 seconds
+    const maxSec = 5 + Math.floor(Math.random() * 2);
     return `
 local _start = os.clock()
 local function _checkTiming()
@@ -247,7 +223,6 @@ _checkTiming()
 ` + '\n' + code;
 }
 
-/** 8 integrity checks on native functions */
 function addIntegrityChecks(code) {
     const checks = `
 local _natives = {

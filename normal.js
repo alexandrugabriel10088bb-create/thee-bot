@@ -1,14 +1,13 @@
 // ============================================================
-// NORMAL OBFUSCATOR — Técnicas de agresividad Baja/Media
-// Técnicas: Renombrado (I1/l1/v1), Matemáticas básicas,
-//           Junk code (80-100 líneas), CFF (if→while+state),
-//           Mapeo de palabras clave, VM simple (25 handlers),
-//           Anti-timing, Anti-hook básico
+// NORMAL OBFUSCATOR — Low/Medium aggressiveness techniques
+// Techniques: Renaming (I1/l1/v1), Basic math, Junk code (80-100 lines),
+//             Control Flow Flattening (if→while+state), Keyword mapping,
+//             Simple VM (25 handlers), Anti-timing, Basic anti-hook
 // ============================================================
 
 'use strict';
 
-// ── Helpers ──────────────────────────────────────────────────
+// ── Base helpers ─────────────────────────────────────────────
 
 function stripLuaComments(code) {
     // Remove --[[ long comments ]]
@@ -28,7 +27,6 @@ function generateNormalName(index) {
 }
 
 function renameVarsNormal(code) {
-    // Find local variable declarations
     const localPattern = /\blocal\s+([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
     const varMap = new Map();
     let counter = 0;
@@ -41,7 +39,6 @@ function renameVarsNormal(code) {
         }
     }
 
-    // Replace each variable
     for (const [original, renamed] of varMap) {
         const safe = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         code = code.replace(new RegExp(`\\b${safe}\\b`, 'g'), renamed);
@@ -52,34 +49,32 @@ function renameVarsNormal(code) {
 
 function obfuscateNumbersBasic(code) {
     // Wrap integer literals in simple arithmetic so they still evaluate correctly
-    // (n+10-10)+5 style — but we keep it as (n+C1-C1) where C1 is a small random constant
     return code.replace(/\b(\d+)\b/g, (full, num) => {
         const n = parseInt(num, 10);
-        if (n === 0) return `(1-1)`;
+        if (n === 0) return '(1-1)';
         const c = Math.floor(Math.random() * 9) + 1;
         return `(${n + c}-${c})`;
     });
 }
 
-// Map of common Roblox/Luau keywords → string.char() equivalents
 const KEYWORD_MAP = {
-    'ScreenGui':       strToStringChar('ScreenGui'),
-    'TextLabel':       strToStringChar('TextLabel'),
-    'TextButton':      strToStringChar('TextButton'),
-    'Frame':           strToStringChar('Frame'),
-    'ImageLabel':      strToStringChar('ImageLabel'),
-    'ScrollingFrame':  strToStringChar('ScrollingFrame'),
-    'TextBox':         strToStringChar('TextBox'),
-    'Players':         strToStringChar('Players'),
-    'Workspace':       strToStringChar('Workspace'),
-    'RunService':      strToStringChar('RunService'),
-    'UserInputService':strToStringChar('UserInputService'),
-    'TweenService':    strToStringChar('TweenService'),
-    'HttpService':     strToStringChar('HttpService'),
-    'ReplicatedStorage':strToStringChar('ReplicatedStorage'),
-    'ServerScriptService':strToStringChar('ServerScriptService'),
-    'StarterGui':      strToStringChar('StarterGui'),
-    'StarterPlayer':   strToStringChar('StarterPlayer'),
+    'ScreenGui':         strToStringChar('ScreenGui'),
+    'TextLabel':         strToStringChar('TextLabel'),
+    'TextButton':        strToStringChar('TextButton'),
+    'Frame':             strToStringChar('Frame'),
+    'ImageLabel':        strToStringChar('ImageLabel'),
+    'ScrollingFrame':    strToStringChar('ScrollingFrame'),
+    'TextBox':           strToStringChar('TextBox'),
+    'Players':           strToStringChar('Players'),
+    'Workspace':         strToStringChar('Workspace'),
+    'RunService':        strToStringChar('RunService'),
+    'UserInputService':  strToStringChar('UserInputService'),
+    'TweenService':      strToStringChar('TweenService'),
+    'HttpService':       strToStringChar('HttpService'),
+    'ReplicatedStorage': strToStringChar('ReplicatedStorage'),
+    'ServerScriptService': strToStringChar('ServerScriptService'),
+    'StarterGui':        strToStringChar('StarterGui'),
+    'StarterPlayer':     strToStringChar('StarterPlayer'),
 };
 
 function strToStringChar(s) {
@@ -88,12 +83,9 @@ function strToStringChar(s) {
 }
 
 function mapRobloxKeywords(code) {
-    // Replace plain string literals matching known keywords
     for (const [kw, replacement] of Object.entries(KEYWORD_MAP)) {
-        // Match "ScreenGui" or 'ScreenGui' in string literals
         const re = new RegExp(`(['"])${kw}\\1`, 'g');
         code = code.replace(re, `(${replacement})`);
-        // Also replace bare game:GetService("X") style
         const re2 = new RegExp(`game\\["${kw}"\\]`, 'g');
         code = code.replace(re2, `game[(${replacement})]`);
     }
@@ -101,7 +93,6 @@ function mapRobloxKeywords(code) {
 }
 
 function buildSimpleVM(code) {
-    // 25 false handler functions + a dispatch table, then wrap code execution
     const handlers = [];
     const dispatchEntries = [];
 
@@ -155,7 +146,6 @@ function injectJunkCode(code, minLines, maxLines) {
         lines.push(pat(i));
     }
 
-    // Scatter junk: half at top, half at bottom
     const top = lines.slice(0, Math.floor(count / 2)).join('\n');
     const bot = lines.slice(Math.floor(count / 2)).join('\n');
 
@@ -195,7 +185,6 @@ if _rawset ~= rawset then _error("hook detected", 0) end
 }
 
 function simpleCFF(code) {
-    // Wrap code in a simple while+state machine (state 0 → execute → done)
     return `
 local _state = 0
 while true do

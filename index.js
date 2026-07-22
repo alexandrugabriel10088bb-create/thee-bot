@@ -25,74 +25,74 @@ client.once('ready', () => {
     registerCommands();
 });
 
-// ─── Slash command registration ───────────────────────────────
+// ─── Slash command registration ─────────────────────────────────
 
 async function registerCommands() {
     const commands = [
         new SlashCommandBuilder()
             .setName('obf')
-            .setDescription('Obfusca tu código Lua')
+            .setDescription('Obfuscate your Lua code')
             .addStringOption(opt =>
                 opt.setName('mode')
-                    .setDescription('Nivel de obfuscación')
+                    .setDescription('Obfuscation level')
                     .setRequired(true)
                     .addChoices(
-                        { name: '🟢 Normal  — Baja/Media agresividad',    value: 'normal' },
-                        { name: '🔴 Hard    — Alta agresividad',          value: 'hard'   },
-                        { name: '💀 Max     — Extrema (todas las técnicas)', value: 'max' },
-                        { name: '⚙️  Custom  — Elige técnicas extremas',  value: 'custom' },
+                        { name: '🟢 Normal — Low/Medium aggressiveness', value: 'normal' },
+                        { name: '🔴 Hard   — High aggressiveness',         value: 'hard'   },
+                        { name: '💀 Max    — Extreme (all techniques)',    value: 'max'    },
+                        { name: '⚙️  Custom — Choose extreme techniques', value: 'custom' },
                     ))
             .addStringOption(opt =>
                 opt.setName('code')
-                    .setDescription('Código Lua a obfuscar')
+                    .setDescription('Lua code to obfuscate')
                     .setRequired(false))
             .addAttachmentOption(opt =>
                 opt.setName('file')
-                    .setDescription('Archivo .lua a obfuscar')
+                    .setDescription('Lua file to obfuscate')
                     .setRequired(false)),
 
         new SlashCommandBuilder()
             .setName('upload')
-            .setDescription('Sube código a Pastefy')
+            .setDescription('Upload code to Pastefy')
             .addStringOption(opt =>
-                opt.setName('code').setDescription('Código a subir').setRequired(false))
+                opt.setName('code').setDescription('Code to upload').setRequired(false))
             .addAttachmentOption(opt =>
-                opt.setName('file').setDescription('Archivo a subir').setRequired(false)),
+                opt.setName('file').setDescription('File to upload').setRequired(false)),
     ];
 
     try {
         await client.application.commands.set(commands);
-        console.log('Comandos registrados correctamente');
+        console.log('Commands registered successfully');
     } catch (err) {
-        console.error('Error al registrar comandos:', err);
+        console.error('Error registering commands:', err);
     }
 }
 
-// ─── Custom mode: all 💀 extreme techniques ───────────────────
+// ─── Custom mode: all 💀 extreme techniques ───────────────────────
 
 const CUSTOM_TECHNIQUES = [
-    { id: 'chaotic_rename',   label: '💀 Renombrado caótico',       desc: 'Nombres hasta 20 chars, mezcla aleatoria' },
-    { id: 'obf_strings',      label: '💀 Ofuscación de strings',     desc: 'Todos los strings → string.char()' },
-    { id: 'extreme_math',     label: '💀 Matemáticas extremas',      desc: '8-10 operaciones anidadas' },
-    { id: 'extreme_mba',      label: '💀 MBA extremo',               desc: 'Mixed Boolean Arithmetic' },
-    { id: 'obf_booleans',     label: '💀 Ofuscar booleanos',         desc: 'true→(1==1), false→(1==0)' },
-    { id: 'obf_nil',          label: '💀 Ofuscar nil',               desc: 'nil→(function() end)()' },
-    { id: 'massive_junk',     label: '💀 Junk masivo',               desc: '500-800 líneas de basura' },
-    { id: 'ultra_cff',        label: '💀 CFF ultracomplejo',         desc: 'Estados anidados con condiciones falsas' },
-    { id: 'recursive_vm',     label: '💀 VM recursiva (50-80 capas)', desc: 'VM frágil con verificación' },
-    { id: 'polymorphic_vm',   label: '💀 VM polimórfica',            desc: 'Estructura diferente en cada ejecución' },
-    { id: 'full_antidebug',   label: '💀 Anti-debug completo',       desc: 'Todas las técnicas anti-debug' },
-    { id: 'total_antihook',   label: '💀 Anti-hook total',           desc: 'Hook en todas las funciones nativas' },
-    { id: 'anti_getlocal',    label: '💀 Anti-getlocal',             desc: 'Bloquea debug.getlocal/setlocal' },
-    { id: 'anti_getinfo',     label: '💀 Anti-getinfo',              desc: 'Bloquea debug.getinfo' },
-    { id: 'anti_stacktrace',  label: '💀 Anti-stacktrace',           desc: 'Ofusca stack traces' },
-    { id: 'anti_timing',      label: '💀 Anti-timing extremo',       desc: 'Timeouts 5-7 segundos estrictos' },
-    { id: 'anti_profile',     label: '💀 Anti-profile',              desc: 'Previene profiling y análisis' },
-    { id: 'anti_print',       label: '💀 Anti-print/rconsole',       desc: 'Bloquea print, warn, rconsole' },
-    { id: 'executor_detect',  label: '💀 Detección de ejecutores',   desc: 'Synapse, KRNL, ScriptWare…' },
-    { id: 'checksum',         label: '💀 Checksum (MD5 simulado)',    desc: 'Autoverificación de integridad' },
-    { id: 'auto_restore',     label: '💀 Auto-restauración',         desc: 'Detección de modificaciones' },
-    { id: 'integrity_checks', label: '💀 8 checks de integridad',    desc: 'Verificación de funciones nativas' },
+    { id: 'chaotic_rename',   label: '💀 Chaotic renaming',           desc: 'Names up to 20 chars, mixed random' },
+    { id: 'obf_strings',      label: '💀 String obfuscation',         desc: 'Every string → string.char()' },
+    { id: 'extreme_math',     label: '💀 Extreme math',               desc: '8-10 nested operations per number' },
+    { id: 'extreme_mba',      label: '💀 Extreme MBA',                desc: 'Mixed Boolean Arithmetic' },
+    { id: 'obf_booleans',     label: '💀 Boolean obfuscation',        desc: 'true→(1==1), false→(1==0)' },
+    { id: 'obf_nil',          label: '💀 Nil obfuscation',            desc: 'nil→(function() end)()' },
+    { id: 'massive_junk',     label: '💀 Massive junk',               desc: '500-800 lines of dead code' },
+    { id: 'ultra_cff',        label: '💀 Ultra CFF',                  desc: 'Nested states with false conditions' },
+    { id: 'recursive_vm',     label: '💀 Recursive VM (50-80 layers)', desc: 'Fragile VM with integrity check' },
+    { id: 'polymorphic_vm',   label: '💀 Polymorphic VM',             desc: 'Different structure each run' },
+    { id: 'full_antidebug',   label: '💀 Full anti-debug',            desc: 'All anti-debug techniques' },
+    { id: 'total_antihook',   label: '💀 Total anti-hook',            desc: 'Hooks on all native functions' },
+    { id: 'anti_getlocal',    label: '💀 Anti-getlocal',              desc: 'Blocks debug.getlocal/setlocal' },
+    { id: 'anti_getinfo',     label: '💀 Anti-getinfo',               desc: 'Blocks debug.getinfo' },
+    { id: 'anti_stacktrace',  label: '💀 Anti-stacktrace',            desc: 'Obfuscates stack traces' },
+    { id: 'anti_timing',      label: '💀 Extreme anti-timing',        desc: 'Strict 5-7 second timeouts' },
+    { id: 'anti_profile',     label: '💀 Anti-profile',                desc: 'Prevents profiling and analysis' },
+    { id: 'anti_print',       label: '💀 Anti-print/rconsole',          desc: 'Blocks print, warn, rconsole' },
+    { id: 'executor_detect',  label: '💀 Executor detection',         desc: 'Synapse, KRNL, ScriptWare...' },
+    { id: 'checksum',         label: '💀 Checksum (MD5 simulated)',   desc: 'Runtime self-checksum' },
+    { id: 'auto_restore',     label: '💀 Self-restore',               desc: 'Detects in-memory modifications' },
+    { id: 'integrity_checks', label: '💀 8 integrity checks',         desc: 'Verifies native functions' },
 ];
 
 // ─── Interaction router ───────────────────────────────────────
@@ -122,7 +122,7 @@ async function handleObf(interaction) {
     const file = interaction.options.getAttachment('file');
 
     if (!code && !file) {
-        await interaction.reply({ content: '❌ Proporciona código o un archivo .lua', ephemeral: true });
+        await interaction.reply({ content: '❌ Please provide code or a .lua file.', ephemeral: true });
         return;
     }
 
@@ -132,7 +132,7 @@ async function handleObf(interaction) {
             const res = await axios.get(file.url);
             srcCode = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
         } catch (e) {
-            await interaction.reply({ content: `❌ No se pudo descargar el archivo: ${e.message}`, ephemeral: true });
+            await interaction.reply({ content: `❌ Could not download the file: ${e.message}`, ephemeral: true });
             return;
         }
     }
@@ -141,23 +141,17 @@ async function handleObf(interaction) {
         return showCustomMenu(interaction, srcCode);
     }
 
-    // Normal / Hard / Max
     await interaction.deferReply({ ephemeral: true });
     try {
         let obfuscated;
-        if (mode === 'normal') {
-            obfuscated = normalObfuscate(srcCode);
-        } else if (mode === 'hard') {
-            obfuscated = hardObfuscate(srcCode);
-        } else {
-            // max — all 💀 techniques
-            obfuscated = maxObfuscate(srcCode);
-        }
+        if (mode === 'normal')       obfuscated = normalObfuscate(srcCode);
+        else if (mode === 'hard')    obfuscated = hardObfuscate(srcCode);
+        else                         obfuscated = maxObfuscate(srcCode); // max
 
         await deliverResult(interaction, srcCode, obfuscated, mode.toUpperCase());
     } catch (err) {
         console.error(err);
-        await interaction.editReply({ content: `❌ Error durante la obfuscación: ${err.message}` });
+        await interaction.editReply({ content: `❌ Error during obfuscation: ${err.message}` });
     }
 }
 
@@ -167,15 +161,13 @@ async function showCustomMenu(interaction, srcCode) {
     const sessionId = interaction.user.id + '_' + Date.now();
     userSessions.set(sessionId, { code: srcCode, selected: new Set(), user: interaction.user.id });
 
-    // Split 22 techniques into pages of 5 (select menu max options = 25, but we do 5 per row with buttons)
-    // Use two select menus (max 25 options each)
     const half = Math.ceil(CUSTOM_TECHNIQUES.length / 2);
     const group1 = CUSTOM_TECHNIQUES.slice(0, half);
     const group2 = CUSTOM_TECHNIQUES.slice(half);
 
     const menu1 = new StringSelectMenuBuilder()
         .setCustomId(`sel1_${sessionId}`)
-        .setPlaceholder('Técnicas extremas (grupo 1) — selecciona una o varias')
+        .setPlaceholder('Extreme techniques (group 1) — select one or more')
         .setMinValues(0)
         .setMaxValues(group1.length)
         .addOptions(group1.map(t =>
@@ -187,7 +179,7 @@ async function showCustomMenu(interaction, srcCode) {
 
     const menu2 = new StringSelectMenuBuilder()
         .setCustomId(`sel2_${sessionId}`)
-        .setPlaceholder('Técnicas extremas (grupo 2) — selecciona una o varias')
+        .setPlaceholder('Extreme techniques (group 2) — select one or more')
         .setMinValues(0)
         .setMaxValues(group2.length)
         .addOptions(group2.map(t =>
@@ -199,32 +191,32 @@ async function showCustomMenu(interaction, srcCode) {
 
     const obfBtn = new ButtonBuilder()
         .setCustomId(`obfuscate_${sessionId}`)
-        .setLabel('💀 Obfuscar ahora')
+        .setLabel('💀 Obfuscate now')
         .setStyle(ButtonStyle.Danger);
 
     const statusBtn = new ButtonBuilder()
         .setCustomId(`status_${sessionId}`)
-        .setLabel('Ver selección')
+        .setLabel('View selection')
         .setStyle(ButtonStyle.Secondary);
 
     const allBtn = new ButtonBuilder()
         .setCustomId(`all_${sessionId}`)
-        .setLabel('Seleccionar todo')
+        .setLabel('Select all')
         .setStyle(ButtonStyle.Primary);
 
     const embed = new EmbedBuilder()
         .setColor(0xFF0000)
-        .setTitle('💀 Obfuscación Custom — Técnicas Extremas')
+        .setTitle('💀 Custom Obfuscation — Extreme Techniques')
         .setDescription(
-            'Selecciona las técnicas que quieres aplicar desde los menús de abajo.\n' +
-            'Luego pulsa **💀 Obfuscar ahora**.\n\n' +
-            '> ⚠️ Combinar todas las técnicas produce código muy pesado.'
+            'Select the techniques you want to apply from the menus below.\n' +
+            'Then press **💀 Obfuscate now**.\n\n' +
+            '> ⚠️ Combining every technique produces very heavy output.'
         )
         .addFields(
-            { name: 'Grupo 1', value: group1.map(t => `\`${t.id}\``).join(', '), inline: false },
-            { name: 'Grupo 2', value: group2.map(t => `\`${t.id}\``).join(', '), inline: false },
+            { name: 'Group 1', value: group1.map(t => `\`${t.id}\``).join(', '), inline: false },
+            { name: 'Group 2', value: group2.map(t => `\`${t.id}\``).join(', '), inline: false },
         )
-        .setFooter({ text: 'Solo tú puedes ver este mensaje • Sesión: ' + sessionId.slice(-6) });
+        .setFooter({ text: 'Only you can see this message • Session: ' + sessionId.slice(-6) });
 
     await interaction.reply({
         embeds: [embed],
@@ -246,11 +238,10 @@ async function handleSelectMenuInteraction(interaction) {
 
     const session = userSessions.get(sessionId);
     if (!session || session.user !== interaction.user.id) {
-        await interaction.reply({ content: '❌ Esta sesión no es tuya.', ephemeral: true });
+        await interaction.reply({ content: '❌ This is not your session.', ephemeral: true });
         return;
     }
 
-    // Update selected set: clear previous from this group then add new
     const half = Math.ceil(CUSTOM_TECHNIQUES.length / 2);
     const groupIds = group === 'sel1'
         ? CUSTOM_TECHNIQUES.slice(0, half).map(t => t.id)
@@ -271,17 +262,17 @@ async function handleButtonInteraction(interaction) {
 
     const session = userSessions.get(sessionId);
     if (!session || session.user !== interaction.user.id) {
-        await interaction.reply({ content: '❌ Esta sesión no es tuya.', ephemeral: true });
+        await interaction.reply({ content: '❌ This is not your session.', ephemeral: true });
         return;
     }
 
     if (action === 'status') {
         const list = session.selected.size > 0
             ? [...session.selected].join(', ')
-            : 'Ninguna seleccionada';
+            : 'None selected';
         const embed = new EmbedBuilder()
             .setColor(0x2f3136)
-            .setTitle('Técnicas seleccionadas')
+            .setTitle('Selected techniques')
             .setDescription(`\`\`\`${list}\`\`\``);
         await interaction.reply({ embeds: [embed], ephemeral: true });
         return;
@@ -290,7 +281,7 @@ async function handleButtonInteraction(interaction) {
     if (action === 'all') {
         CUSTOM_TECHNIQUES.forEach(t => session.selected.add(t.id));
         await interaction.reply({
-            content: `✅ Todas las técnicas seleccionadas (${session.selected.size})`,
+            content: `✅ All techniques selected (${session.selected.size})`,
             ephemeral: true,
         });
         return;
@@ -299,7 +290,7 @@ async function handleButtonInteraction(interaction) {
     if (action === 'obfuscate') {
         if (session.selected.size === 0) {
             await interaction.reply({
-                content: '❌ No has seleccionado ninguna técnica.',
+                content: '❌ You have not selected any technique.',
                 ephemeral: true,
             });
             return;
@@ -335,11 +326,11 @@ async function deliverResult(interaction, original, obfuscated, modeLabel) {
 
     const dmEmbed = new EmbedBuilder()
         .setColor(0x00FF00)
-        .setTitle('✅ Código Obfuscado')
+        .setTitle('✅ Code Obfuscated')
         .addFields(
-            { name: 'Modo',        value: modeLabel,                                          inline: false },
-            { name: 'Pastefy',     value: pasteUrl,                                           inline: false },
-            { name: 'Tamaño',      value: `Original: ${original.length} bytes\nObfuscado: ${obfuscated.length} bytes`, inline: false },
+            { name: 'Mode', value: modeLabel, inline: false },
+            { name: 'Pastefy', value: pasteUrl, inline: false },
+            { name: 'Size', value: `Original: ${original.length} bytes\nObfuscated: ${obfuscated.length} bytes`, inline: false },
         );
 
     try {
@@ -350,8 +341,8 @@ async function deliverResult(interaction, original, obfuscated, modeLabel) {
 
     const channelEmbed = new EmbedBuilder()
         .setColor(0x00FF00)
-        .setTitle('✅ Obfuscación completada')
-        .setDescription(`${interaction.user}, revisa tus DMs. Se adjunta el archivo aquí también.`);
+        .setTitle('✅ Obfuscation completed')
+        .setDescription(`${interaction.user}, check your DMs. File is also attached here.`);
 
     await interaction.editReply({
         embeds: [channelEmbed],
@@ -366,7 +357,7 @@ async function handleUpload(interaction) {
     const file = interaction.options.getAttachment('file');
 
     if (!code && !file) {
-        await interaction.reply({ content: '❌ Proporciona código o un archivo', ephemeral: true });
+        await interaction.reply({ content: '❌ Please provide code or a file.', ephemeral: true });
         return;
     }
 
@@ -381,11 +372,11 @@ async function handleUpload(interaction) {
         const data = await uploadToPastefy(content);
         const embed = new EmbedBuilder()
             .setColor(0x0099FF)
-            .setTitle('📋 Subido a Pastefy')
+            .setTitle('📋 Uploaded to Pastefy')
             .addFields({ name: 'URL', value: data.url || data.id || 'N/A' });
         await interaction.editReply({ embeds: [embed] });
     } catch (err) {
-        await interaction.editReply({ content: `❌ Error al subir: ${err.message}` });
+        await interaction.editReply({ content: `❌ Upload failed: ${err.message}` });
     }
 }
 

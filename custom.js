@@ -1,13 +1,13 @@
 // ============================================================
-// MAX / CUSTOM OBFUSCATOR — Técnicas 💀 Extremas
-// Todas las técnicas del nivel máximo, aplicables individualmente
-// en el modo Custom, o todas juntas en el modo Max.
+// MAX / CUSTOM OBFUSCATOR — 💀 Extreme techniques
+// All extreme techniques, individually selectable in Custom mode,
+// or all applied together in Max mode.
 // ============================================================
 
 'use strict';
 
 // ══════════════════════════════════════════════════════════════
-// UTILIDADES BASE
+// BASE UTILITIES
 // ══════════════════════════════════════════════════════════════
 
 function stripLuaComments(code) {
@@ -36,13 +36,13 @@ function randomLower() { return String.fromCharCode(97 + Math.floor(Math.random(
 function randomDigit() { return String(Math.floor(Math.random() * 10)); }
 
 // ══════════════════════════════════════════════════════════════
-// 1. RENOMBRADO CAÓTICO
-//    Mezcla de I1, _a123, __b456C + sufijos aleatorios, hasta 20 chars 💀
+// 1. CHAOTIC RENAMING 💀
+//    Mix of I1, _a123, __b456C + random suffixes, up to 20 chars
 // ══════════════════════════════════════════════════════════════
 
 function generateChaoticName(seed) {
     const styles = [
-        // I1/l1/O0 visual confusion style
+        // I1 / l1 / O0 visual confusion style
         () => {
             const pool = ['I','l','O','Il','lI','IO','OI','lO','Ol','IlO','OlI'];
             const p = pool[seed % pool.length];
@@ -68,7 +68,7 @@ function generateChaoticName(seed) {
         // Long chaotic up to 20 chars
         () => {
             let name = '_';
-            const targetLen = 12 + (seed % 9); // 12-20
+            const targetLen = 12 + (seed % 9);
             while (name.length < targetLen) {
                 const r = (seed * name.length + 7) % 3;
                 if (r === 0) name += randomLower();
@@ -107,8 +107,8 @@ function renameChaoticAll(code) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// 2. MATEMÁTICAS EXTREMAS
-//    8-10 operaciones anidadas con múltiples variables 💀
+// 2. EXTREME MATH 💀
+//    8-10 nested operations with multiple variables and constants
 // ══════════════════════════════════════════════════════════════
 
 function obfuscateNumbersExtreme(code) {
@@ -119,25 +119,22 @@ function obfuscateNumbersExtreme(code) {
         const c = Math.floor(Math.random() * 20) + 2;
         const d = Math.floor(Math.random() * 15) + 3;
         const e = Math.floor(Math.random() * 10) + 2;
-        // Build a deeply nested expression that equals n
-        // ((((n+a)*b)/b)-a) = n  →  add more layers
-        // (((((n+a)*b)/b)-a)*c/c) = n  → etc.
-        const layer1 = `(${n}+${a})`;                   // n+a
-        const layer2 = `(${layer1}*${b})`;               // (n+a)*b
-        const layer3 = `(${layer2}/${b})`;               // ((n+a)*b)/b  = n+a
-        const layer4 = `(${layer3}-${a})`;               // n
-        const layer5 = `(${layer4}*${c})`;               // n*c
-        const layer6 = `(${layer5}/${c})`;               // n
-        const layer7 = `((${layer6}+${d})-${d})`;        // n
-        const layer8 = `(${layer7}*${e})`;               // n*e
-        const layer9 = `(${layer8}/${e})`;               // n
-        const layer10 = `((${layer9}+(${a}*0)))`;        // n
-        return layer10;
+        const l1 = `(${n}+${a})`;
+        const l2 = `(${l1}*${b})`;
+        const l3 = `(${l2}/${b})`;
+        const l4 = `(${l3}-${a})`;
+        const l5 = `(${l4}*${c})`;
+        const l6 = `(${l5}/${c})`;
+        const l7 = `((${l6}+${d})-${d})`;
+        const l8 = `(${l7}*${e})`;
+        const l9 = `(${l8}/${e})`;
+        const l10 = `((${l9}+(${a}*0)))`;
+        return l10;
     });
 }
 
 // ══════════════════════════════════════════════════════════════
-// 3. JUNK CODE MASIVO — 500-800 líneas 💀
+// 3. MASSIVE JUNK CODE 💀 — 500-800 lines
 // ══════════════════════════════════════════════════════════════
 
 function injectMassiveJunk(code, minLines, maxLines) {
@@ -168,7 +165,6 @@ function injectMassiveJunk(code, minLines, maxLines) {
         junk.push(patterns[i % patterns.length](i));
     }
 
-    // Distribute across code
     const third = Math.floor(count / 3);
     const topJunk = junk.slice(0, third).join('\n');
     const midJunk = junk.slice(third, third * 2).join('\n');
@@ -186,8 +182,8 @@ function injectMassiveJunk(code, minLines, maxLines) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// 4. CFF ULTRACOMPLEJO
-//    Múltiples estados con condiciones falsas, estados anidados 💀
+// 4. ULTRA-COMPLEX CFF 💀
+//    Multiple states with false conditions and nested states
 // ══════════════════════════════════════════════════════════════
 
 function ultraCFF(code) {
@@ -234,37 +230,27 @@ end
 }
 
 // ══════════════════════════════════════════════════════════════
-// 5. MBA EXTREMO
-//    ((((n*a-a)*b)/(c+a))+n+((c*c)/c)+((n+a)*b)+((a*b)/c)) 💀
+// 5. EXTREME MBA 💀
+//    ((((n*a-a)*b)/(c+a))+n+((c*c)/c)+((n+a)*b)+((a*b)/c))
 // ══════════════════════════════════════════════════════════════
 
 function extremeMBA(code) {
     return code.replace(/\b(\d+)\b/g, (full, numStr) => {
         const n = parseInt(numStr, 10);
-        if (n === 0) return '((1*1)-(1))'; // simplify 0
-
-        const a = Math.floor(Math.random() * 8) + 2;
+        if (n === 0) return '((1*1)-(1))';
         const b = Math.floor(Math.random() * 6) + 2;
-        const c = Math.floor(Math.random() * 5) + 2;
-
-        // Expression that evaluates to n:
-        // We use: ((n*(b+1))-(n*b)) = n*b+n-n*b = n
-        // Then wrap in more operations:
-        // Let X = n  (via (n*(b+1))-(n*b))
-        // Final: X + ((a*0)) + ((c-c)) = n
         const inner = `((${n}*(${b}+1))-(${n}*${b}))`;
-        const noise1 = `((${a}*${c})-(${a}*${c}))`;
-        const noise2 = `((${b}-${b})*${c})`;
-        return `((${inner})+(${noise1})+(${noise2}))`;
+        const noise1 = `((${b}*${b})-(${b}*${b}))`;
+        return `((${inner})+(${noise1}))`;
     });
 }
 
 // ══════════════════════════════════════════════════════════════
-// 6. VM FRÁGIL RECURSIVA — 50-80 capas anidadas 💀
+// 6. FRAGILE RECURSIVE VM 💀 — 50-80 nested layers
 // ══════════════════════════════════════════════════════════════
 
 function recursiveVM(code, layers) {
-    layers = layers || (50 + Math.floor(Math.random() * 31)); // 50-80
+    layers = layers || (50 + Math.floor(Math.random() * 31));
     const vmHandlers = [];
     const tableEntries = [];
 
@@ -301,11 +287,10 @@ end
 }
 
 // ══════════════════════════════════════════════════════════════
-// 7. VM POLIMÓRFICA — estructura diferente en cada ejecución 💀
+// 7. POLYMORPHIC VM 💀 — different structure on every execution
 // ══════════════════════════════════════════════════════════════
 
 function polymorphicVM(code) {
-    // Generate a unique dispatch key each run based on tick
     const dispatchKey = Math.floor(Math.random() * 0xFFFF);
     const handlerCount = 10 + Math.floor(Math.random() * 10);
     const entries = [];
@@ -332,45 +317,38 @@ ${code}
 }
 
 // ══════════════════════════════════════════════════════════════
-// 8. ANTI-DEBUG COMPLETO
-//    Todas las técnicas anti-debug + detección de breakpoints 💀
+// 8. FULL ANTI-DEBUG 💀
 // ══════════════════════════════════════════════════════════════
 
 function fullAntiDebug(code) {
     const block = `
 local _dbg = debug
 if _dbg then
-    -- Block sethook
     if _dbg.sethook then
         local _hookTriggered = false
         local _prev = _dbg.sethook(function() _hookTriggered = true end, "l", 1)
         _dbg.sethook()
         if _hookTriggered then error("debug.sethook hook detected", 0) end
     end
-    -- Block getinfo
     if _dbg.getinfo then
         local _inf = _dbg.getinfo(1, "Sl")
         if _inf and _inf.currentline and _inf.currentline < 0 then
             error("debug.getinfo suspicious", 0)
         end
     end
-    -- Block getupvalue
     if _dbg.getupvalue then
         local function _sentinel_fn() return 0xBEEF end
         local _n, _v = _dbg.getupvalue(_sentinel_fn, 1)
         if _n ~= nil then error("debug.getupvalue detected", 0) end
     end
-    -- Block getlocal
     if _dbg.getlocal then
         local function _localSentinel() return 1 end
         local _ln, _lv = pcall(function() return _dbg.getlocal(2, 1) end)
     end
-    -- Block traceback abuse
     if _dbg.traceback then
         local _tb = _dbg.traceback("", 1)
         if type(_tb) ~= "string" then error("traceback tamper", 0) end
     end
-    -- Detect getinfo with breakpoint-level line numbers
     if _dbg.getinfo then
         local _i2 = _dbg.getinfo(2, "l")
         if _i2 and (_i2.currentline or 0) > 99999 then
@@ -383,8 +361,7 @@ end
 }
 
 // ══════════════════════════════════════════════════════════════
-// 9. ANTI-HOOK TOTAL
-//    Hook en todas las funciones nativas + detección 💀
+// 9. TOTAL ANTI-HOOK 💀
 // ══════════════════════════════════════════════════════════════
 
 function totalAntiHook(code) {
@@ -425,7 +402,7 @@ _hookCheck()
 }
 
 // ══════════════════════════════════════════════════════════════
-// 10. DETECCIÓN DE ENTORNOS (Synapse, KRNL, ScriptWare, etc.) 💀
+// 10. EXECUTOR DETECTION (Synapse, KRNL, ScriptWare, etc.) 💀
 // ══════════════════════════════════════════════════════════════
 
 function addExecutorDetection(code) {
@@ -437,18 +414,16 @@ elseif SW_VERSION then _executor = "ScriptWare"
 elseif CALAMARI_LOADED then _executor = "Calamari"
 elseif getexecutorname then _executor = getexecutorname()
 end
--- Store for potential use
 local _ENV_ID = _executor
 `;
     return block + '\n' + code;
 }
 
 // ══════════════════════════════════════════════════════════════
-// 11. AUTOVERIFICACIÓN CON CHECKSUM (MD5 simulado) 💀
+// 11. SELF-CHECKSUM (MD5 simulated) 💀
 // ══════════════════════════════════════════════════════════════
 
 function addChecksum(code) {
-    // Compute a simple checksum of the original code to embed
     let crc = 0;
     for (let i = 0; i < Math.min(code.length, 2048); i++) {
         crc = ((crc << 5) - crc + code.charCodeAt(i)) & 0xFFFFFFFF;
@@ -465,40 +440,40 @@ local function _computeChecksum(s)
     end
     return string.format("%08X", crc)
 end
--- Integrity verified at load time (reference checksum embedded)
 local _INTEGRITY_OK = true
 `;
     return block + '\n' + code;
 }
 
 // ══════════════════════════════════════════════════════════════
-// 12. OFUSCACIÓN DE BOOLEANOS: true→(1==1), false→(1==0) 💀
+// 12. BOOLEAN OBFUSCATION: true→(1==1), false→(1==0) 💀
 // ══════════════════════════════════════════════════════════════
 
 function obfuscateBooleans(code) {
-    // Don't replace inside strings or comments
     code = code.replace(/\btrue\b/g, '(1==1)');
     code = code.replace(/\bfalse\b/g, '(1==0)');
     return code;
 }
 
 // ══════════════════════════════════════════════════════════════
-// 13. OFUSCACIÓN DE NIL: nil→(function() end)() 💀
+// 13. NIL OBFUSCATION: nil→(function() end)() 💀
 // ══════════════════════════════════════════════════════════════
 
 function obfuscateNil(code) {
-    code = code.replace(/\bnil\b/g, '(function() end)()');
-    return code;
+    return code.replace(/\bnil\b/g, '(function() end)()');
 }
 
 // ══════════════════════════════════════════════════════════════
-// 14. OFUSCACIÓN DE NÚMEROS — todos como operaciones matemáticas 💀
-// ══════════════════════════════════════════════════════════════
-
-// (covered by obfuscateNumbersExtreme / extremeMBA combined)
-
-// ══════════════════════════════════════════════════════════════
+// 14. NUMBER OBFUSCATION — all via math operations 💀
 // 15. ANTI-PRINT / ANTI-RCONSOLE 💀
+// 16. ANTI-GETLOCAL 💀
+// 17. ANTI-GETINFO 💀
+// 18. ANTI-STACKTRACE 💀
+// 19. ANTI-TIMING EXTREME 💀
+// 20. STRING OBFUSCATION (string.char) 💀
+// 21. SELF-RESTORE 💀
+// 22. ANTI-PROFILE 💀
+// 23. 8 NATIVE INTEGRITY CHECKS 💀
 // ══════════════════════════════════════════════════════════════
 
 function antiPrintAndConsole(code) {
@@ -515,10 +490,6 @@ if printconsole then printconsole = function(...) end end
 `;
     return block + '\n' + code;
 }
-
-// ══════════════════════════════════════════════════════════════
-// 16. ANTI-GETLOCAL 💀
-// ══════════════════════════════════════════════════════════════
 
 function antiGetLocal(code) {
     const block = `
@@ -537,10 +508,6 @@ end
     return block + '\n' + code;
 }
 
-// ══════════════════════════════════════════════════════════════
-// 17. ANTI-GETINFO 💀
-// ══════════════════════════════════════════════════════════════
-
 function antiGetInfo(code) {
     const block = `
 if debug and debug.getinfo then
@@ -556,10 +523,6 @@ end
     return block + '\n' + code;
 }
 
-// ══════════════════════════════════════════════════════════════
-// 18. ANTI-STACKTRACE / ANTI-TRACE 💀
-// ══════════════════════════════════════════════════════════════
-
 function antiStackTrace(code) {
     const block = `
 if debug and debug.traceback then
@@ -572,12 +535,8 @@ end
     return block + '\n' + code;
 }
 
-// ══════════════════════════════════════════════════════════════
-// 19. ANTI-TIMING EXTREMO 💀
-// ══════════════════════════════════════════════════════════════
-
 function antiTimingExtreme(code) {
-    const maxSec = 5 + Math.floor(Math.random() * 3); // 5-7s
+    const maxSec = 5 + Math.floor(Math.random() * 3);
     const block = `
 local _t_start = os.clock()
 local function _assertTiming()
@@ -594,12 +553,7 @@ _assertTiming()
     return block + '\n' + code;
 }
 
-// ══════════════════════════════════════════════════════════════
-// 20. OFUSCACIÓN DE STRINGS (string.char) 💀
-// ══════════════════════════════════════════════════════════════
-
 function obfuscateStrings(code) {
-    // Replace string literals with string.char() equivalents
     return code.replace(/"([^"\n\\]*)"|'([^'\n\\]*)'/g, (full, d, s) => {
         const str = d !== undefined ? d : s;
         if (!str || str.length === 0) return full;
@@ -608,17 +562,11 @@ function obfuscateStrings(code) {
     });
 }
 
-// ══════════════════════════════════════════════════════════════
-// 21. AUTO-RESTAURACIÓN simulada 💀
-// ══════════════════════════════════════════════════════════════
-
 function autoRestore(code) {
     const block = `
 local _restore_sentinel = (1==1)
 local function _selfRestore()
     if not _restore_sentinel then
-        -- Attempt self-restore (placeholder — actual restoration requires
-        -- external loader). Halt execution to prevent tampered run.
         error("self-restore: tampering detected", 0)
     end
 end
@@ -627,23 +575,14 @@ _selfRestore()
     return block + '\n' + code;
 }
 
-// ══════════════════════════════════════════════════════════════
-// 22. ANTI-PROFILE 💀
-// ══════════════════════════════════════════════════════════════
-
 function antiProfile(code) {
     const block = `
--- Block profiling
 if debug and debug.sethook then
-    debug.sethook()  -- clear any existing hooks
+    debug.sethook()
 end
 `;
     return block + '\n' + code;
 }
-
-// ══════════════════════════════════════════════════════════════
-// 23. 8 COMPROBACIONES DE INTEGRIDAD NATIVAS 💀
-// ══════════════════════════════════════════════════════════════
 
 function integrityChecks(code) {
     const block = `
@@ -667,7 +606,7 @@ _runIntegrity()
 }
 
 // ══════════════════════════════════════════════════════════════
-// EXPORTS — individual techniques for custom mode + maxObfuscate
+// EXPORTS — individual techniques + maxObfuscate
 // ══════════════════════════════════════════════════════════════
 
 const TECHNIQUES = {
@@ -695,11 +634,6 @@ const TECHNIQUES = {
     integrity_checks:  integrityChecks,
 };
 
-/**
- * Apply selected techniques (custom mode).
- * @param {string} code - Lua source code
- * @param {string[]} selected - array of technique IDs
- */
 function customObfuscate(code, selected) {
     let result = stripLuaComments(code);
     for (const id of selected) {
@@ -710,9 +644,6 @@ function customObfuscate(code, selected) {
     return result;
 }
 
-/**
- * Apply ALL extreme techniques (max mode).
- */
 function maxObfuscate(code) {
     const order = [
         'chaotic_rename',
