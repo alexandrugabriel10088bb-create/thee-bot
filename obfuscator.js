@@ -14,33 +14,44 @@ const CUSTOM_VARS = [
 
 const HANDLER_POOL = ["KQ","HF","W8","SX","Rj","nT","pL","qZ","mV","xB","yC","wD"];
 
-// ==================== ANTI-TAMPER LUA (INTACTO) ====================
+// ==================== ANTI-TAMPER LUA (EXPANDIDO 20%) ====================
 const ANTI_TAMPER = `
 local function antiTamper()
     local function crash(reason)
         while true do
             local stack = {}
-            for i = 1, 20 do
+            for i = 1, 25 do
                 local info = debug.getinfo(i, 'S')
                 if info then table.insert(stack, info.short_src or '?') end
+                if info and info.name then table.insert(stack, info.name or '?') end
+                if info and info.linedefined then table.insert(stack, tostring(info.linedefined)) end
             end
             error('ANTI-TAMPER:' .. reason .. '|' .. table.concat(stack, '->'), 0)
         end
     end
     
+    -- Protección de entorno
     pcall(function()
         local mt = getmetatable(_G) or {}
         if mt.__index or mt.__newindex then
             if mt.__index then
                 for k, _ in pairs(_G) do
-                    if k == 'env' or k == 'logger' or k == 'spy' or k == 'dump' or k == 'inspect' then
+                    if k == 'env' or k == 'logger' or k == 'spy' or k == 'dump' or k == 'inspect' or k == 'debugger' or k == 'console' then
                         crash('ENV_LOGGER')
+                    end
+                end
+            end
+            if mt.__newindex then
+                for k, _ in pairs(_G) do
+                    if k == 'env' or k == 'logger' or k == 'spy' or k == 'dump' or k == 'inspect' or k == 'debugger' or k == 'console' then
+                        crash('ENV_LOGGER_NEWINDEX')
                     end
                 end
             end
         end
     end)
     
+    -- Protección de debug
     pcall(function()
         local ok = pcall(function() return debug.getinfo(1, 'S') end)
         if not ok then crash('DEBUG_DISABLED') end
@@ -50,46 +61,150 @@ local function antiTamper()
         debug.sethook(hookFunc, 'l')
         debug.sethook()
         if hooked then crash('HOOK_DETECTED') end
+        
+        local hooked2 = false
+        local hookFunc2 = function() hooked2 = true end
+        debug.sethook(hookFunc2, 'c')
+        debug.sethook()
+        if hooked2 then crash('HOOK_DETECTED_CALL') end
+        
+        local hooked3 = false
+        local hookFunc3 = function() hooked3 = true end
+        debug.sethook(hookFunc3, 'r')
+        debug.sethook()
+        if hooked3 then crash('HOOK_DETECTED_RETURN') end
     end)
     
+    -- Protección de buffer
     pcall(function()
         local test = 'test'
         local buf = buffer.fromstring(test)
         local result = buffer.tostring(buf)
         if result ~= test then crash('BUFFER_CORRUPT') end
+        
+        local test2 = 'hello world'
+        local buf2 = buffer.fromstring(test2)
+        local result2 = buffer.tostring(buf2)
+        if result2 ~= test2 then crash('BUFFER_CORRUPT_2') end
+        
+        local test3 = string.rep('a', 1000)
+        local buf3 = buffer.fromstring(test3)
+        local result3 = buffer.tostring(buf3)
+        if result3 ~= test3 then crash('BUFFER_CORRUPT_3') end
     end)
     
+    -- Protección de servicios (expandido)
     pcall(function()
         local services = {
             'Players','Workspace','ServerScriptService','ReplicatedStorage',
             'RunService','HttpService','MarketplaceService','DataStoreService',
-            'AssetService','Lighting','SoundService','TweenService'
+            'AssetService','Lighting','SoundService','TweenService',
+            'UserInputService','ContextMenuService','DragDetectorService',
+            'CollectionService','SelectionService','ChangeHistoryService',
+            'ScriptContext','StarterGui','StarterPack','StarterPlayer',
+            'TeleportService','FriendService','GroupService','BadgeService'
         }
         for _, svc in ipairs(services) do
             local ok, result = pcall(function() return game:GetService(svc) end)
             if not ok then crash('SERVICE:' .. svc) end
             if result and type(result) ~= 'Instance' then crash('SERVICE_INVALID:' .. svc) end
+            if result and result.Name and result.Name ~= svc then crash('SERVICE_NAME_MISMATCH:' .. svc) end
         end
     end)
     
+    -- Protección de corrutinas (expandido)
     pcall(function()
         local co = coroutine.create(function() coroutine.yield(1) end)
         local ok, result = coroutine.resume(co)
         if not ok or result ~= 1 then crash('COROUTINE_FAIL') end
+        
+        local co2 = coroutine.create(function() coroutine.yield(2) end)
+        local ok2, result2 = coroutine.resume(co2)
+        if not ok2 or result2 ~= 2 then crash('COROUTINE_FAIL_2') end
+        
+        local co3 = coroutine.create(function() 
+            local a = 1
+            local b = 2
+            coroutine.yield(a + b)
+        end)
+        local ok3, result3 = coroutine.resume(co3)
+        if not ok3 or result3 ~= 3 then crash('COROUTINE_FAIL_3') end
     end)
     
+    -- Protección de funciones básicas (expandido)
     pcall(function()
         local funcs = {
             'pcall','xpcall','error','assert','type',
             'rawget','rawset','next','pairs','ipairs',
             'select','tonumber','tostring','string','table',
-            'math','bit32','coroutine','task','game','Instance'
+            'math','bit32','coroutine','task','game','Instance',
+            'getfenv','setfenv','getmetatable','setmetatable',
+            'print','warn','info','loadstring','loadfile',
+            'dofile','require','module','package','_G','_VERSION'
         }
         for _, f in ipairs(funcs) do
             if type(_G[f]) ~= 'function' and type(_G[f]) ~= 'table' then
                 crash('FUNC_MISS:' .. f)
             end
         end
+    end)
+    
+    -- Protección de metamétodos
+    pcall(function()
+        local t = {}
+        local mt = {}
+        mt.__index = function() return nil end
+        setmetatable(t, mt)
+        if getmetatable(t) ~= mt then crash('METATABLE_FAIL') end
+        if t.any_key ~= nil then crash('METATABLE_INDEX_FAIL') end
+    end)
+    
+    -- Protección de strings
+    pcall(function()
+        local s = "test"
+        if type(s) ~= "string" then crash('STRING_TYPE_FAIL') end
+        if string.len(s) ~= 4 then crash('STRING_LEN_FAIL') end
+        if string.byte(s, 1) ~= 116 then crash('STRING_BYTE_FAIL') end
+        if string.sub(s, 1, 2) ~= "te" then crash('STRING_SUB_FAIL') end
+        if string.upper(s) ~= "TEST" then crash('STRING_UPPER_FAIL') end
+        if string.lower(s) ~= "test" then crash('STRING_LOWER_FAIL') end
+    end)
+    
+    -- Protección de tablas
+    pcall(function()
+        local t = {1, 2, 3, 4, 5}
+        if #t ~= 5 then crash('TABLE_LEN_FAIL') end
+        if t[1] ~= 1 then crash('TABLE_INDEX_FAIL') end
+        if t[5] ~= 5 then crash('TABLE_INDEX_FAIL_2') end
+        table.insert(t, 6)
+        if #t ~= 6 then crash('TABLE_INSERT_FAIL') end
+        if t[6] ~= 6 then crash('TABLE_INSERT_FAIL_2') end
+    end)
+    
+    -- Protección de matemáticas básicas
+    pcall(function()
+        if math.pi < 3.14 or math.pi > 3.15 then crash('MATH_PI_FAIL') end
+        if math.abs(-5) ~= 5 then crash('MATH_ABS_FAIL') end
+        if math.max(1, 2, 3) ~= 3 then crash('MATH_MAX_FAIL') end
+        if math.min(1, 2, 3) ~= 1 then crash('MATH_MIN_FAIL') end
+        if math.floor(3.7) ~= 3 then crash('MATH_FLOOR_FAIL') end
+        if math.ceil(3.2) ~= 4 then crash('MATH_CEIL_FAIL') end
+    end)
+    
+    -- Protección de tiempo
+    pcall(function()
+        local tm1 = os.time()
+        local tm2 = os.time()
+        if tm2 < tm1 then crash('TIME_FAIL') end
+        if os.clock() < 0 then crash('CLOCK_FAIL') end
+        if os.date() == "" then crash('DATE_FAIL') end
+    end)
+    
+    -- Protección de entorno de ejecución
+    pcall(function()
+        local env = getfenv()
+        if not env then crash('GETFENV_FAIL') end
+        if type(env) ~= "table" then crash('GETFENV_TYPE_FAIL') end
     end)
     
     return true
@@ -276,7 +391,7 @@ function obfuscate(sourceCode) {
 
     let finalCode = `${HEADER} ${generateJunk(30)} ${protections} ${ANTI_TAMPER} ${vm}`.replace(/\s+/g, " ").trim();
     
-    const targetSize = 10 * 1024;
+    const targetSize = 12 * 1024;
     let currentSize = Buffer.byteLength(finalCode, 'utf8');
 
     if (currentSize < targetSize) {
