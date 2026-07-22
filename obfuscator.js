@@ -15,7 +15,7 @@ const CUSTOM_VARS = [
 const HANDLER_POOL = ["KQ","HF","W8","SX","Rj","nT","pL","qZ","mV","xB","yC","wD"];
 
 // ==================== ANTI-TAMPER LUA (EXPANDIDO 20%) ====================
-const ANTI_TAMPER = `
+const ANTI_TAMPER_1 = `
 local function antiTamper()
     local function crash(reason)
         while true do
@@ -30,7 +30,6 @@ local function antiTamper()
         end
     end
     
-    -- Protección de entorno
     pcall(function()
         local mt = getmetatable(_G) or {}
         if mt.__index or mt.__newindex then
@@ -51,7 +50,6 @@ local function antiTamper()
         end
     end)
     
-    -- Protección de debug
     pcall(function()
         local ok = pcall(function() return debug.getinfo(1, 'S') end)
         if not ok then crash('DEBUG_DISABLED') end
@@ -75,7 +73,6 @@ local function antiTamper()
         if hooked3 then crash('HOOK_DETECTED_RETURN') end
     end)
     
-    -- Protección de buffer
     pcall(function()
         local test = 'test'
         local buf = buffer.fromstring(test)
@@ -93,7 +90,6 @@ local function antiTamper()
         if result3 ~= test3 then crash('BUFFER_CORRUPT_3') end
     end)
     
-    -- Protección de servicios (expandido)
     pcall(function()
         local services = {
             'Players','Workspace','ServerScriptService','ReplicatedStorage',
@@ -112,7 +108,6 @@ local function antiTamper()
         end
     end)
     
-    -- Protección de corrutinas (expandido)
     pcall(function()
         local co = coroutine.create(function() coroutine.yield(1) end)
         local ok, result = coroutine.resume(co)
@@ -131,7 +126,6 @@ local function antiTamper()
         if not ok3 or result3 ~= 3 then crash('COROUTINE_FAIL_3') end
     end)
     
-    -- Protección de funciones básicas (expandido)
     pcall(function()
         local funcs = {
             'pcall','xpcall','error','assert','type',
@@ -149,7 +143,6 @@ local function antiTamper()
         end
     end)
     
-    -- Protección de metamétodos
     pcall(function()
         local t = {}
         local mt = {}
@@ -159,7 +152,6 @@ local function antiTamper()
         if t.any_key ~= nil then crash('METATABLE_INDEX_FAIL') end
     end)
     
-    -- Protección de strings
     pcall(function()
         local s = "test"
         if type(s) ~= "string" then crash('STRING_TYPE_FAIL') end
@@ -170,7 +162,6 @@ local function antiTamper()
         if string.lower(s) ~= "test" then crash('STRING_LOWER_FAIL') end
     end)
     
-    -- Protección de tablas
     pcall(function()
         local t = {1, 2, 3, 4, 5}
         if #t ~= 5 then crash('TABLE_LEN_FAIL') end
@@ -181,7 +172,6 @@ local function antiTamper()
         if t[6] ~= 6 then crash('TABLE_INSERT_FAIL_2') end
     end)
     
-    -- Protección de matemáticas básicas
     pcall(function()
         if math.pi < 3.14 or math.pi > 3.15 then crash('MATH_PI_FAIL') end
         if math.abs(-5) ~= 5 then crash('MATH_ABS_FAIL') end
@@ -191,7 +181,6 @@ local function antiTamper()
         if math.ceil(3.2) ~= 4 then crash('MATH_CEIL_FAIL') end
     end)
     
-    -- Protección de tiempo
     pcall(function()
         local tm1 = os.time()
         local tm2 = os.time()
@@ -200,7 +189,6 @@ local function antiTamper()
         if os.date() == "" then crash('DATE_FAIL') end
     end)
     
-    -- Protección de entorno de ejecución
     pcall(function()
         local env = getfenv()
         if not env then crash('GETFENV_FAIL') end
@@ -216,6 +204,11 @@ if not protected then
         error('PROTECTION_FAILED: ' .. tostring(err), 0)
     end
 end
+`;
+
+// ==================== ANTI-TAMPER LUA (NUEVO DEL ARCHIVO) ====================
+const ANTI_TAMPER_2 = `
+local function f()local function g()local h={}local function i(t)if h[t]then return end h[t]=true if type(t)~="table"then return end for k,v in pairs(t)do if type(v)=="table"and not h[v]then i(v)end end table.freeze(t)end pcall(function()i(_G)end)local j={"getinfo","getupvalue","setupvalue","getlocal","setlocal","getmetatable","setmetatable","getregistry","getfenv","setfenv","getconstants","getconstant","getprotos","getuservalue","setuservalue"}for _,k in ipairs(j)do pcall(function()debug[k]=nil end)end pcall(function()getfenv=nil setfenv=nil loadstring=nil load=nil end)local l={}setmetatable(l,{__index=function(t,k)if k=="_G"or k=="getfenv"or k=="setfenv"then return nil end return rawget(t,k)end,__newindex=function(t,k,v)rawset(t,k,v)end,__metatable="SECURE"})setfenv(1,l)end local function m()local function n(r)while true do local s={}for i=1,10 do local t=debug.getinfo(i,"S")if t then table.insert(s,t.short_src or"?")end end error("TAMPER:"..r.."|"..table.concat(s,"->"),0)end end pcall(function()local u=getmetatable(_G)or{}if u.__index or u.__newindex then if u.__index then local v=false for k,_ in pairs(_G)do if k=="env"or k=="logger"or k=="spy"then v=true break end end if v then n("ENV_LOGGER")end end end local w={}local x,y=pcall(function()setmetatable(w,{})getmetatable(w)end)if not x then n("METATABLE")end local z={}for k,_ in pairs(_G)do z[k]=true end if #z>1000 then n("ENV_OVERFLOW")end end)pcall(function()local A=pcall(function()return debug.getinfo(1,"S")end)if not A then n("DEBUG_DISABLED")end local B=false local C=function()B=true end debug.sethook(C,"l")debug.sethook()if B then n("HOOK")end local D,E=pcall(function()debug.getinfo(999999,"S")end)if E and string.find(E,"invalid level")then n("BREAKPOINT")end end)pcall(function()local F="test"local G=buffer.fromstring(F)local H=buffer.tostring(G)if H~=F then n("MEMORY")end local I=buffer.create(4)buffer.writeu8(I,0,255)if buffer.readu8(I,0)~=255 then n("BUFFER")end local J,K=pcall(function()local L=buffer.create(1024)for i=1,1024 do buffer.writeu8(L,i-1,i%256)end end)if not K then n("MEMORY_ACCESS")end end)pcall(function()local M={"Players","Workspace","ServerScriptService","ReplicatedStorage","RunService","HttpService","MarketplaceService","DataStoreService"}for _,N in ipairs(M)do local O,P=pcall(function()return game:GetService(N)end)if not O then n("SERVICE:"..N)end if P and type(P)~="Instance"then n("SERVICE_INVALID:"..N)end end local Q,R=pcall(function()local S=Instance.new("Part")S.Name="Guard" S.Parent=workspace S:Destroy()end)if R then n("INSTANCE")end local T,U=pcall(function()return game:GetService("AssetService"):CreateEditableMesh()end)if T and U then local V=U:AddVertex(Vector3.new(0,0,0))if not V then n("MESH")end U:Destroy()end end)pcall(function()local W=coroutine.create(function()coroutine.yield(1)end)local X,Y=coroutine.resume(W)if not X or Y~=1 then n("COROUTINE")end local Z=0 for _ in pairs(coroutine)do Z=Z+1 end if Z<1 then n("THREAD")end end)pcall(function()local _=os.clock()local aa=0 for i=1,100000 do aa=aa+i end local ab=os.clock()-_ if ab>0.1 then n("PERFORMANCE")end local ac=os.time()local ad=os.time()if ad<ac then n("TIME")end end)pcall(function()local ae={"pcall","xpcall","error","assert","type","rawget","rawset","next","pairs","ipairs","select","tonumber","tostring"}for _,af in ipairs(ae)do if type(_G[af])~="function"then n("FUNC_MISS:"..af)end end end)return true end local function ag()local function ah(ai)while true do error("LOGGER:"..ai,0)end end pcall(function()local aj={"logger","log","debug","spy","monitor","hook","inject","dump","trace","profile","benchmark","performance","record","capture","snapshot","clone","copy"}for _,ak in ipairs(aj)do if _G[ak]~=nil then ah("KEY:"..ak)end end local al=getmetatable(_G)or{}if al.__index and type(al.__index)=="function"then local am=pcall(function()al.__index(_G,"test_key")end)if am then ah("METATABLE_INDEX")end end end)pcall(function()local an={}local function ao()end local ap=pcall(function()return debug.getinfo(ao,"S")end)if ap then ah("FUNCTION_CAPTURE")end end)pcall(function()local aq={}local ar,as=pcall(function()for k,v in pairs(_G)do aq[k]=true end end)if ar and #aq>0 then local at=getmetatable(_G)or{}if at.__newindex then local au="__guard__"local av=_G[au]_G[au]="test"if _G[au]~="test"then ah("ENV_CHANGE")end _G[au]=av end end end)pcall(function()local aw={"io","os","print","warn","error"}for _,ax in ipairs(aw)do if _G[ax]and type(_G[ax])=="function"then local ay=_G[ax]_G[ax]=nil if _G[ax]~=nil then ah("OVERRIDE:"..ax)end _G[ax]=ay end end end)return true end local function az()local function aA()while true do local aB,aC=pcall(function()local aD=getmetatable(_G)or{}if aD.__index or aD.__newindex then local aE=pcall(function()aD.__index=nil aD.__newindex=nil setmetatable(_G,{})end)if not aE then error("LOGGER_ACTIVE")end end local aF=debug.getinfo(1,"S")if aF and aF.short_src=="[C]"then error("C_HOOK")end end)if not aB then while true do error("GUARDIAN:"..tostring(aC),0)end end local aG=os.clock()while os.clock()-aG<0.001 do end end end local aH=coroutine.create(aA)local aI,aJ=coroutine.resume(aH)if not aI then error("THREAD_FAIL:"..tostring(aJ),0)end return aH end local function aK()g()local aL,aM=pcall(m)if not aL then error("ANTI_TAMPER:"..tostring(aM),0)end local aN,aO=pcall(ag)if not aN then error("ANTI_LOGGER:"..tostring(aO),0)end local aP=pcall(az)if not aP then error("THREAD_GUARDIAN",0)end return true,"OK"end local aQ,aR=pcall(aK)if not aQ then while true do local aS={}for i=1,10 do local aT=debug.getinfo(i,"S")if aT then table.insert(aS,aT.short_src or"?")end end error("INIT_FAIL:"..aR.."|"..table.concat(aS,"->"),0)end end pcall(function()local aU=getfenv()if aU and type(aU)=="table"then local aV=getmetatable(aU)or{}if aV.__metatable~="SECURE"then error("COMPROMISED",0)end end end)return true,"ACTIVE"end return f()
 `;
 
 // ==================== FUNCIONES AUXILIARES ====================
@@ -239,7 +232,7 @@ function pickHandlers(count) {
     return result;
 }
 
-function generateJunk(lines = 50) {
+function generateJunk(lines = 30) {
     let j = '';
     for (let i = 0; i < lines; i++) {
         const r = Math.random();
@@ -343,7 +336,6 @@ function buildHandlerVM(payloadStr) {
     let vm = `local ${dataVar}=[[\n${payloadStr}\n]] `;
     vm += `local ${dispatchTable}={} `;
     
-    // Crear handlers
     for (let i = 0; i < handlers.length; i++) {
         if (i === realIdx) {
             vm += `local ${handlers[i]}=function() `;
@@ -359,7 +351,6 @@ function buildHandlerVM(payloadStr) {
         vm += `${dispatchTable}[${i + 1}]=${handlers[i]} `;
     }
     
-    // Ejecutar handlers secuencialmente
     vm += `local ${stateVar}=1 `;
     vm += `while true do `;
     vm += `if ${stateVar}==1 then ${dispatchTable}[1]() ${stateVar}=2 `;
@@ -389,17 +380,8 @@ function obfuscate(sourceCode) {
 
     const vm = buildHandlerVM(payloadToProtect);
 
-    let finalCode = `${HEADER} ${generateJunk(30)} ${protections} ${ANTI_TAMPER} ${vm}`.replace(/\s+/g, " ").trim();
-    
-    const targetSize = 12 * 1024;
-    let currentSize = Buffer.byteLength(finalCode, 'utf8');
-
-    if (currentSize < targetSize) {
-        const neededBytes = targetSize - currentSize;
-        const junkPerLine = 50;
-        const additionalLines = Math.ceil(neededBytes / junkPerLine);
-        finalCode = `${HEADER} ${generateJunk(30 + additionalLines)} ${protections} ${ANTI_TAMPER} ${vm}`.replace(/\s+/g, " ").trim();
-    }
+    // Combinar ambos anti-tampers
+    const finalCode = `${HEADER} ${generateJunk(30)} ${protections} ${ANTI_TAMPER_1} ${ANTI_TAMPER_2} ${vm}`.replace(/\s+/g, " ").trim();
 
     return finalCode;
 }
