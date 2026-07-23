@@ -1,889 +1,726 @@
 // ============================================================
-// BANANA OBFUSCATOR v3.0 - IRONBREW2 COMPLETE
+// BANANA OBFUSCATOR v4.0 - FULL WITH VM, BYTECODE, ANTI-DEBUG
 // ============================================================
 
-const HEADER = `--[[ Protected by Banana Obfuscator v3.0 ]]`;
+const HEADER = `--[[ Protected by Banana Obfuscator v4.0 ]]`;
 
-// ==================== CONFIGURACIÓN ====================
-const CONFIG = {
-    // Control Flow
-    useCFG: true,
-    useInlining: true,
-    useSuperOperators: true,
-    useMutations: true,
-    useBlockReorder: true,
-    useJunkCode: true,
-    
-    // Encryption
-    encryptStrings: true,
-    encryptImportantStrings: true,
-    encryptNumbers: true,
-    useGenericDecryptor: true,
-    
-    // VM
-    useVM: true,
-    compressBytecode: true,
-    preserveLineInfo: false,
-    
-    // Security
-    useAntiTamper: true,
-    useAntiDebug: true,
-    useAntiHook: true,
-    useAntiDump: true,
-    useAntiDecompiler: true,
-    
-    // Values
-    maxMutations: 50,
-    maxSuperOperators: 10,
-    decryptTableLen: 128
-};
-
-// ==================== VARIABLES PERSONALIZADAS ====================
+// ==================== VARIABLES ====================
 const CUSTOM_VARS = [
-    "data", "temp", "result", "value", "index", "count", "total", "amount",
-    "position", "status", "flags", "config", "cache", "buffer", "stream",
-    "packet", "frame", "token", "session", "client", "server", "node",
-    "table_data", "string_data", "number_data", "boolean_data", "nil_data",
-    "function_data", "thread_data", "userdata_data", "table_temp", "string_temp",
-    "number_temp", "boolean_temp", "nil_temp", "function_temp", "thread_temp",
-    "userdata_temp", "table_result", "string_result", "number_result", "boolean_result",
-    "nil_result", "function_result", "thread_result", "userdata_result",
-    "meta", "proto", "env", "stack", "heap", "pool", "cache_data", "buffer_data",
-    "stream_data", "packet_data", "frame_data", "token_data", "session_data",
-    "client_data", "server_data", "node_data", "global_data", "local_data"
+    "a","b","c","d","e","f","g","h","i","j","k","l","m",
+    "n","o","p","q","r","s","t","u","v","w","x","y","z",
+    "A","B","C","D","E","F","G","H","I","J","K","L","M",
+    "N","O","P","Q","R","S","T","U","V","W","X","Y","Z"
 ];
 
-// ==================== HANDLER POOL ====================
+const VM_OPS = [
+    "MOVE", "LOADK", "LOADBOOL", "LOADNIL", "GETUPVAL", "SETUPVAL",
+    "GETTABUP", "SETTABUP", "GETTABLE", "SETTABLE", "NEWTABLE",
+    "SELF", "ADD", "SUB", "MUL", "DIV", "MOD", "POW", "UNM",
+    "NOT", "LEN", "CONCAT", "JMP", "EQ", "LT", "LE", "TEST",
+    "TESTSET", "CALL", "TAILCALL", "RETURN", "FORLOOP",
+    "FORPREP", "TFORLOOP", "SETLIST", "CLOSURE", "VARARG"
+];
+
 const HANDLER_POOL = [
-    "KQ", "HF", "W8", "SX", "Rj", "nT", "pL", "qZ", 
-    "mV", "xB", "yC", "wD", "A9", "B7", "C3", "D4", 
-    "E6", "F1", "G2", "H5", "I0", "J8", "L3", "M4",
-    "N5", "O6", "P7", "Q8", "R9", "S0", "T1", "U2",
-    "V3", "W4", "X5", "Y6", "Z7", "a8", "b9", "c0"
+    "x","y","z","t","u","v","w","a","b","c","d","e","f",
+    "g","h","i","j","k","l","m","n","o","p","q","r","s"
 ];
 
 // ==================== GENERADOR DE NOMBRES ====================
-function generateCustomName() {
-    const base = CUSTOM_VARS[Math.floor(Math.random() * CUSTOM_VARS.length)];
-    const suffix = Math.floor(Math.random() * 999999);
-    const prefixes = ["", "get_", "set_", "is_", "has_", "on_", "do_", "try_", "run_", "make_", "create_"];
-    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-    return prefix + base + "_" + suffix;
+function generateName() {
+    let name = "";
+    const len = Math.floor(Math.random() * 8) + 3;
+    for (let i = 0; i < len; i++) {
+        name += CUSTOM_VARS[Math.floor(Math.random() * CUSTOM_VARS.length)];
+    }
+    return name;
 }
 
-// ==================== PICK HANDLERS ====================
-function pickHandlers(count) {
-    const used = new Set();
-    const result = [];
-    while (result.length < count) {
-        const base = HANDLER_POOL[Math.floor(Math.random() * HANDLER_POOL.length)];
-        const name = base + Math.floor(Math.random() * 99);
-        if (!used.has(name)) { used.add(name); result.push(name); }
-    }
-    return result;
+function generateHandler() {
+    return HANDLER_POOL[Math.floor(Math.random() * HANDLER_POOL.length)] + 
+           HANDLER_POOL[Math.floor(Math.random() * HANDLER_POOL.length)];
 }
 
-// ==================== RUNTIME STRING ====================
-function runtimeString(str) {
-    return `string.char(${str.split('').map(c => c.charCodeAt(0)).join(',')})`;
+function generateXORKey() {
+    return Math.floor(Math.random() * 255) + 1;
 }
 
-// ==================== APPLY CFF (Control Flow Flattening) ====================
-function applyCFF(blocks) {
-    const stateVar = generateCustomName();
-    let lua = `local ${stateVar}=1 while true do `;
-    for (let i = 0; i < blocks.length; i++) {
-        if (i === 0) lua += `if ${stateVar}==1 then ${blocks[i]} ${stateVar}=2 `;
-        else         lua += `elseif ${stateVar}==${i + 1} then ${blocks[i]} ${stateVar}=${i + 2} `;
-    }
-    lua += `elseif ${stateVar}==${blocks.length + 1} then break end end `;
-    return lua;
+// ==================== REMOVER COMENTARIOS ====================
+function removeComments(code) {
+    return code
+        .replace(/--\[\[[\s\S]*?\]\]/g, '')
+        .replace(/--[^\n]*/g, '')
+        .trim();
 }
 
-// ==================== MBA (Mixed Boolean Arithmetic) ====================
-function mba() {
-    let n = Math.random() > 0.5 ? 1 : 2, 
-        a = Math.floor(Math.random() * 70) + 15, 
-        b = Math.floor(Math.random() * 40) + 8;
-    return `((${n}*${a}-${a})/(${b}+1)+${n})`;
-}
-
-// ==================== CONTROL FLOW GRAPH ====================
-function generateCFG(code) {
-    let lines = code.split('\n');
-    let blocks = [];
-    let currentBlock = [];
-    let blockLabels = [];
-    
-    // Dividir en bloques básicos
-    for (let line of lines) {
-        let trimmed = line.trim();
-        
-        // Detectar inicio de bloque
-        if (trimmed.match(/^(if|for|while|repeat|function|do)\b/)) {
-            if (currentBlock.length > 0) {
-                blocks.push(currentBlock);
-                currentBlock = [];
-            }
-            let label = generateCustomName();
-            blockLabels.push(label);
-            currentBlock.push(`::${label}::`);
-            currentBlock.push(line);
-        }
-        // Detectar fin de bloque
-        else if (trimmed.match(/^(end|until)\b/)) {
-            currentBlock.push(line);
-            if (currentBlock.length > 0) {
-                blocks.push(currentBlock);
-                currentBlock = [];
-            }
-        }
-        else {
-            currentBlock.push(line);
-        }
-    }
-    
-    if (currentBlock.length > 0) {
-        blocks.push(currentBlock);
-    }
-    
-    // Reordenar bloques aleatoriamente
-    if (CONFIG.useBlockReorder && blocks.length > 2) {
-        for (let i = 0; i < blocks.length - 1; i++) {
-            if (Math.random() > 0.4) {
-                let j = Math.floor(Math.random() * blocks.length);
-                [blocks[i], blocks[j]] = [blocks[j], blocks[i]];
-                [blockLabels[i], blockLabels[j]] = [blockLabels[j], blockLabels[i]];
-            }
-        }
-    }
-    
-    // Agregar saltos entre bloques
-    let result = [];
-    let stateVar = generateCustomName();
-    result.push(`local ${stateVar} = 1`);
-    
-    for (let i = 0; i < blocks.length; i++) {
-        let block = blocks[i];
-        let nextLabel = blockLabels[(i + 1) % blockLabels.length] || 'break';
-        
-        // Verificar si el bloque ya tiene un salto
-        let hasJump = block.some(line => line.includes('goto') || line.includes('return') || line.includes('break'));
-        
-        if (i < blocks.length - 1 && !hasJump) {
-            let lastLine = block[block.length - 1] || '';
-            if (!lastLine.includes('return') && !lastLine.includes('break') && !lastLine.includes('goto')) {
-                result.push(`if ${stateVar} == ${i + 1} then`);
-                result.push(...block);
-                result.push(`${stateVar} = ${i + 2}`);
-                result.push(`goto ${nextLabel}`);
-                result.push('end');
-            } else {
-                result.push(`if ${stateVar} == ${i + 1} then`);
-                result.push(...block);
-                result.push('end');
-            }
-        } else {
-            result.push(`if ${stateVar} == ${i + 1} then`);
-            result.push(...block);
-            result.push('end');
-        }
-    }
-    
-    return result.join('\n');
-}
-
-// ==================== INLINING SIMULATOR ====================
-function simulateInlining(code) {
-    let lines = code.split('\n');
-    let result = [];
-    let i = 0;
-    let functionCache = new Map();
-    
-    while (i < lines.length) {
-        let line = lines[i];
-        
-        // Detectar funciones locales pequeñas
-        let funcMatch = line.match(/local\s+function\s+(\w+)\s*\(([^)]*)\)/);
-        if (funcMatch) {
-            let funcName = funcMatch[1];
-            let params = funcMatch[2].split(',').map(p => p.trim());
-            let funcLines = [line];
-            let depth = 1;
-            let j = i + 1;
-            
-            while (j < lines.length && depth > 0) {
-                funcLines.push(lines[j]);
-                if (lines[j].includes('function')) depth++;
-                if (lines[j].includes('end')) depth--;
-                j++;
-            }
-            
-            // Si es pequeña, cachear para inline
-            if (funcLines.length < 6) {
-                let funcBody = funcLines.slice(1, -1).join('\n');
-                functionCache.set(funcName, { params, body: funcBody, lines: funcLines });
-                result.push(...funcLines);
-                i = j;
-                continue;
-            }
-            
-            result.push(...funcLines);
-            i = j;
-            continue;
-        }
-        
-        // Detectar llamadas a funciones cacheadas
-        let callMatch = line.match(/\b(\w+)\s*\(([^)]*)\)/);
-        if (callMatch) {
-            let funcName = callMatch[1];
-            if (functionCache.has(funcName)) {
-                let func = functionCache.get(funcName);
-                let args = callMatch[2].split(',').map(a => a.trim());
-                
-                // Reemplazar llamada con cuerpo de función
-                let inlined = func.body;
-                for (let p = 0; p < func.params.length && p < args.length; p++) {
-                    inlined = inlined.replace(new RegExp(`\\b${func.params[p]}\\b`, 'g'), args[p]);
-                }
-                result.push(`-- Inlined ${funcName}`);
-                result.push(inlined);
-                i++;
-                continue;
-            }
-        }
-        
-        result.push(line);
-        i++;
-    }
-    
-    return result.join('\n');
-}
-
-// ==================== SUPER OPERATORS ====================
-function generateSuperOperators(code) {
-    let lines = code.split('\n');
-    let result = [];
-    let i = 0;
-    
-    while (i < lines.length) {
-        let line = lines[i];
-        let nextLine = lines[i + 1] || '';
-        let nextNextLine = lines[i + 2] || '';
-        
-        // Combinar múltiples operaciones en super operador
-        if (line.includes(' + ') && nextLine.includes(' * ') && nextNextLine.includes(' - ')) {
-            let varNames = [];
-            let operations = [];
-            
-            // Extraer variables
-            let varMatch = line.match(/local\s+(\w+)\s*=\s*(.+)/);
-            if (varMatch) {
-                varNames.push(varMatch[1]);
-                operations.push(varMatch[2]);
-            }
-            
-            let varMatch2 = nextLine.match(/local\s+(\w+)\s*=\s*(.+)/);
-            if (varMatch2) {
-                varNames.push(varMatch2[1]);
-                operations.push(varMatch2[2]);
-            }
-            
-            let varMatch3 = nextNextLine.match(/local\s+(\w+)\s*=\s*(.+)/);
-            if (varMatch3) {
-                varNames.push(varMatch3[1]);
-                operations.push(varMatch3[2]);
-            }
-            
-            if (varNames.length >= 2) {
-                let superName = generateCustomName();
-                result.push(`local ${superName} = function()`);
-                result.push(`  local ${varNames.join(', ')}`);
-                for (let o = 0; o < operations.length; o++) {
-                    result.push(`  ${varNames[o]} = ${operations[o]}`);
-                }
-                result.push(`  return ${varNames.join(', ')}`);
-                result.push('end');
-                result.push(`local ${generateCustomName()}, ${generateCustomName()}, ${generateCustomName()} = ${superName}()`);
-                i += 3;
-                continue;
-            }
-        }
-        
-        result.push(line);
-        i++;
-    }
-    
-    return result.join('\n');
-}
-
-// ==================== MUTATIONS ====================
-function generateMutations(code) {
-    let lines = code.split('\n');
-    let result = [];
-    let mutationCount = 0;
+// ==================== RENOMBRAR VARIABLES LOCALES ====================
+function renameLocals(code) {
+    const lines = code.split('\n');
+    const varMap = new Map();
+    const usedNames = new Set();
     
     for (let line of lines) {
-        // Mutación 1: Reemplazar operadores con funciones
-        if (Math.random() > 0.3 && mutationCount < CONFIG.maxMutations) {
-            line = line.replace(/\+/g, `-(function() return -1 end)()`)
-                       .replace(/\*/g, `*(function() return 1 end)()`)
-                       .replace(/\/\//g, `/(function() return 1 end)()`);
-            mutationCount++;
+        const matches = line.match(/local\s+(\w+)\s*[=,]/g);
+        if (matches) {
+            for (const match of matches) {
+                const name = match.replace(/local\s+/, '').replace(/[=,].*/, '').trim();
+                if (!varMap.has(name) && !usedNames.has(name)) {
+                    let newName = generateName();
+                    while (usedNames.has(newName)) {
+                        newName = generateName();
+                    }
+                    varMap.set(name, newName);
+                    usedNames.add(newName);
+                }
+            }
         }
         
-        // Mutación 2: Agregar código muerto
-        if (Math.random() > 0.4 && mutationCount < CONFIG.maxMutations) {
-            let deadVar = generateCustomName();
-            let deadValue = Math.floor(Math.random() * 1000);
-            result.push(`local ${deadVar} = ${deadValue} + ${Math.floor(Math.random() * 100)} - ${Math.floor(Math.random() * 100)}`);
-            mutationCount++;
+        const multiMatch = line.match(/local\s+([\w,\s]+)\s*=/);
+        if (multiMatch) {
+            const names = multiMatch[1].split(',').map(s => s.trim());
+            for (const name of names) {
+                if (!varMap.has(name) && !usedNames.has(name)) {
+                    let newName = generateName();
+                    while (usedNames.has(newName)) {
+                        newName = generateName();
+                    }
+                    varMap.set(name, newName);
+                    usedNames.add(newName);
+                }
+            }
         }
-        
-        // Mutación 3: Agregar funciones dummy
-        if (Math.random() > 0.6 && mutationCount < CONFIG.maxMutations) {
-            let dummyName = generateCustomName();
-            result.push(`local ${dummyName} = function(x) return x + ${Math.floor(Math.random() * 10)} - ${Math.floor(Math.random() * 10)} end`);
-            mutationCount++;
-        }
-        
-        result.push(line);
     }
     
-    return result.join('\n');
+    let modified = code;
+    for (const [oldName, newName] of varMap) {
+        const regex = new RegExp(`\\b${oldName}\\b`, 'g');
+        modified = modified.replace(regex, newName);
+    }
+    
+    return modified;
 }
 
-// ==================== STRING ENCRYPTION ====================
-function encryptStrings(code) {
+// ==================== OFUSCAR STRINGS ====================
+function obfuscateStrings(code) {
     const stringRegex = /(["'])(?:(?=(\\?))\2.)*?\1/g;
     let modified = code;
-    let match;
     const replacements = [];
-
+    
+    let match;
     while ((match = stringRegex.exec(code)) !== null) {
-        const fullMatch = match[0];
-        if (fullMatch.length < 4 || fullMatch.includes('__') || fullMatch.includes('\\')) continue;
-        if (fullMatch.includes('string.char')) continue;
-
-        const content = fullMatch.slice(1, -1);
+        const full = match[0];
+        if (full.length < 4 || full.includes('\\')) continue;
+        
+        const content = full.slice(1, -1);
         if (content.includes('"') || content.includes('\\') || content.includes('\n')) continue;
+        
+        const varName = generateName();
+        const chars = content.split('').map(c => c.charCodeAt(0)).join(',');
+        const replacement = `_s[${varName}]`;
+        
+        replacements.push({
+            original: full,
+            replacement: replacement,
+            varName: varName,
+            chars: chars
+        });
+    }
+    
+    if (replacements.length === 0) return code;
+    
+    let result = 'local _s={} ';
+    for (const rep of replacements) {
+        result += `_s[${rep.varName}]=string.char(${rep.chars}) `;
+        modified = modified.replace(rep.original, rep.replacement);
+    }
+    
+    return result + modified;
+}
 
-        // Crear tabla de ofuscación con XOR
-        let key = Math.floor(Math.random() * 255) + 1;
-        let encrypted = [];
+// ==================== OFUSCAR STRINGS CON XOR ====================
+function obfuscateStringsXOR(code) {
+    const stringRegex = /(["'])(?:(?=(\\?))\2.)*?\1/g;
+    let modified = code;
+    const replacements = [];
+    const key = generateXORKey();
+    
+    let match;
+    while ((match = stringRegex.exec(code)) !== null) {
+        const full = match[0];
+        if (full.length < 4 || full.includes('\\')) continue;
+        
+        const content = full.slice(1, -1);
+        if (content.includes('"') || content.includes('\\') || content.includes('\n')) continue;
+        
+        const encrypted = [];
         for (let i = 0; i < content.length; i++) {
             encrypted.push(content.charCodeAt(i) ^ key);
         }
         
-        const varName = generateCustomName();
-        const replacement = `_decrypt_${varName}("${encrypted.join(',')}", ${key})`;
+        const varName = generateName();
+        const replacement = `_x[${varName}]`;
+        
         replacements.push({
-            original: fullMatch,
+            original: full,
             replacement: replacement,
             varName: varName,
-            content: content
+            encrypted: encrypted.join(','),
+            key: key
         });
     }
-
-    if (replacements.length === 0) return code;
-
-    // Generar función de descifrado
-    let result = `local function _decrypt(str, key) 
-        local chars = {} 
-        local i = 1
-        local current = ''
-        while i <= #str do
-            local char = str:sub(i, i)
-            if char == ',' then
-                local val = tonumber(current) or 0
-                table.insert(chars, string.char(bit32.bxor(val, key)))
-                current = ''
-            else
-                current = current .. char
-            end
-            i = i + 1
-        end
-        return table.concat(chars) 
-    end `;
     
-    let offset = 0;
+    if (replacements.length === 0) return code;
+    
+    let result = `local _x={} local _k=${key} local function _xor(a,b)local r=0 local p=1 while a>0 or b>0 do local ab=a%2 local bb=b%2 if ab~=bb then r=r+p end a=(a-ab)/2 b=(b-bb)/2 p=p*2 end return r end `;
     for (const rep of replacements) {
-        const index = code.indexOf(rep.original, offset);
-        if (index !== -1) {
-            modified = modified.substring(0, index) + rep.replacement + modified.substring(index + rep.original.length);
-            offset = index + rep.replacement.length;
-        }
+        result += `_x[${rep.varName}]=function()local t={${rep.encrypted}} local s='' for i=1,#t do s=s..string.char(_xor(t[i],_k)) end return s end `;
+        modified = modified.replace(rep.original, `_x[${rep.varName}]()`);
     }
-
+    
     return result + modified;
 }
 
-// ==================== NUMBER OBFUSCATION ====================
+// ==================== OFUSCAR NÚMEROS ====================
 function obfuscateNumbers(code) {
-    const numberRegex = /\b\d+(\.\d+)?\b/g;
+    const numRegex = /\b\d+\b/g;
     let modified = code;
-    let match;
     const replacements = [];
-
-    while ((match = numberRegex.exec(code)) !== null) {
-        const num = parseFloat(match[0]);
-        if (num < 0 || num > 1000 || Number.isInteger(num) === false) continue;
-        if (num === 0 || num === 1 || num === 2) continue;
-        if (num === 10 || num === 100) continue;
-
+    
+    let match;
+    while ((match = numRegex.exec(code)) !== null) {
+        const num = parseInt(match[0]);
+        if (num < 3 || num > 1000) continue;
+        if ([0,1,2,10,100].includes(num)) continue;
+        
         const a = Math.floor(Math.random() * 20) + 5;
         const b = Math.floor(Math.random() * 10) + 1;
         const c = Math.floor(Math.random() * 5) + 1;
-        const expression = `(${a}*${b}/${c}+${num - (a*b/c)})`;
+        const d = Math.floor(Math.random() * 10) + 1;
+        const expr = `(${a}*${b}/${c}+${d}-${d}+${num - (a*b/c)})`;
+        
         replacements.push({
             original: match[0],
-            replacement: expression
+            replacement: expr
         });
     }
-
+    
     for (const rep of replacements) {
         modified = modified.replace(new RegExp(rep.original, 'g'), rep.replacement);
     }
-
-    return modified;
-}
-
-// ==================== RENAME VARIABLES ====================
-function renameVariables(code) {
-    const lines = code.split('\n');
-    const localVars = new Map();
-    const globalVars = new Map();
-    const usedNames = new Set();
-    let varCounter = 0;
-
-    for (let line of lines) {
-        // Detectar variables locales
-        const localMatch = line.match(/local\s+(\w+)\s*=/);
-        if (localMatch) {
-            const varName = localMatch[1];
-            if (!localVars.has(varName) && !usedNames.has(varName)) {
-                const newName = generateCustomName();
-                localVars.set(varName, newName);
-                usedNames.add(newName);
-            }
-        }
-        
-        // Detectar variables globales
-        const globalMatch = line.match(/^(\w+)\s*=/);
-        if (globalMatch) {
-            const varName = globalMatch[1];
-            if (!globalVars.has(varName) && !usedNames.has(varName) && 
-                !localVars.has(varName) && varName !== 'local' && varName !== 'function') {
-                const newName = generateCustomName();
-                globalVars.set(varName, newName);
-                usedNames.add(newName);
-            }
-        }
-    }
-
-    let modified = code;
-    for (const [oldName, newName] of localVars) {
-        const regex = new RegExp(`\\b${oldName}\\b`, 'g');
-        modified = modified.replace(regex, newName);
-    }
-    for (const [oldName, newName] of globalVars) {
-        const regex = new RegExp(`\\b${oldName}\\b`, 'g');
-        modified = modified.replace(regex, newName);
-    }
-
-    return modified;
-}
-
-// ==================== DEAD CODE INSERTION ====================
-function insertDeadCode(code) {
-    const deadCodeBlocks = [
-        `if false then local ${generateCustomName()}=${Math.floor(Math.random()*100)} end `,
-        `local ${generateCustomName()}=function() return ${Math.floor(Math.random()*100)} end `,
-        `do local ${generateCustomName()}=${Math.floor(Math.random()*100)} end `,
-        `if true and false then print("dead") end `,
-        `local ${generateCustomName()}=nil `,
-        `for _=1,0 do end `,
-        `local ${generateCustomName()}={} `,
-        `local ${generateCustomName()}=function(x) return x + ${Math.floor(Math.random()*100)} end `,
-        `local ${generateCustomName()} = ${Math.floor(Math.random()*1000)} + ${Math.floor(Math.random()*1000)} - ${Math.floor(Math.random()*1000)}`
-    ];
-
-    const lines = code.split('\n');
-    let insertCount = Math.floor(Math.random() * 5) + 3;
     
-    for (let i = 0; i < insertCount; i++) {
-        const insertPos = Math.floor(Math.random() * lines.length);
-        const deadCode = deadCodeBlocks[Math.floor(Math.random() * deadCodeBlocks.length)];
-        lines.splice(insertPos, 0, deadCode);
-    }
+    return modified;
+}
 
+// ==================== CÓDIGO MUERTO ====================
+function insertDeadCode(code) {
+    const deadBlocks = [
+        `if false then local ${generateName()}=0 end `,
+        `do local ${generateName()}=function() return 1 end end `,
+        `local ${generateName()}=nil `,
+        `for _=1,0 do end `,
+        `if true and false then end `,
+        `local ${generateName()}=function(x)return x end `,
+        `local ${generateName()}={} `,
+        `local ${generateName()}=${Math.floor(Math.random()*1000)}+${Math.floor(Math.random()*1000)}-${Math.floor(Math.random()*1000)} `
+    ];
+    
+    const lines = code.split('\n');
+    const count = Math.floor(Math.random() * 5) + 3;
+    
+    for (let i = 0; i < count; i++) {
+        const pos = Math.floor(Math.random() * lines.length);
+        const dead = deadBlocks[Math.floor(Math.random() * deadBlocks.length)];
+        lines.splice(pos, 0, dead);
+    }
+    
     return lines.join('\n');
 }
 
-// ==================== MINIFICATION ====================
-function minify(code) {
-    const regex = /(\[=*\[)[\s\S]*?(\]=*\])|(["'])(?:(?=(\\?))\2.)*?\3|--\[\[[\s\S]*?\]\]|--[^\n]*|\s+/g;
-    return code.replace(regex, (match, bopen, bclose, quote) => {
-        if (bopen || quote) return match;
-        if (match.startsWith('--')) return '';
-        return ' ';
-    }).trim();
+// ==================== CONTROL FLOW FLATTENING ====================
+function flattenControlFlow(code) {
+    const lines = code.split('\n');
+    const blocks = [];
+    let current = [];
+    let stateVar = generateName();
+    let result = [`local ${stateVar}=1 while true do `];
+    let blockCount = 0;
+    
+    for (let line of lines) {
+        const trimmed = line.trim();
+        if (trimmed === '' || trimmed.startsWith('--')) continue;
+        
+        if (trimmed.startsWith('if ') || trimmed.startsWith('for ') || 
+            trimmed.startsWith('while ') || trimmed.startsWith('repeat ') ||
+            trimmed.startsWith('function ')) {
+            if (current.length > 0) {
+                blocks.push(current);
+                current = [];
+                blockCount++;
+            }
+            current.push(line);
+        } else if (trimmed === 'end' || trimmed === 'until') {
+            current.push(line);
+            if (current.length > 0) {
+                blocks.push(current);
+                current = [];
+                blockCount++;
+            }
+        } else {
+            current.push(line);
+        }
+    }
+    
+    if (current.length > 0) {
+        blocks.push(current);
+        blockCount++;
+    }
+    
+    for (let i = 0; i < blocks.length - 1; i++) {
+        if (Math.random() > 0.5) {
+            const j = Math.floor(Math.random() * blocks.length);
+            [blocks[i], blocks[j]] = [blocks[j], blocks[i]];
+        }
+    }
+    
+    for (let i = 0; i < blocks.length; i++) {
+        const block = blocks[i].join('\n');
+        const nextState = (i + 1) % blocks.length + 1;
+        result.push(`if ${stateVar}==${i+1} then ${block} ${stateVar}=${nextState} `);
+    }
+    result.push(`elseif ${stateVar}==${blocks.length+1} then break end end `);
+    
+    return result.join('');
 }
 
-// ==================== ANTI-TAMPER COMPLETE ====================
-const ANTI_TAMPER_LUA = `
-local function antiTamper()
-    local function crash(reason)
-        while true do
-            local stack={}
-            for i=1,20 do
-                local info=debug.getinfo(i,'S')
-                if info then
-                    table.insert(stack,(info.short_src or '?')..':'..(info.currentline or '?'))
-                end
+// ==================== SUPER OPERADORES ====================
+function generateSuperOperators(code) {
+    const lines = code.split('\n');
+    let result = [];
+    let i = 0;
+    
+    while (i < lines.length) {
+        const line = lines[i];
+        const next = lines[i + 1] || '';
+        
+        if (line.includes(' = ') && next.includes(' = ') && 
+            (line.includes(' + ') || line.includes(' * '))) {
+            
+            const var1 = line.match(/local\s+(\w+)\s*=/);
+            const var2 = next.match(/local\s+(\w+)\s*=/);
+            
+            if (var1 && var2) {
+                const name = generateName();
+                result.push(`local ${name}=function()`);
+                result.push(`local ${var1[1]},${var2[1]}`);
+                result.push(`${var1[1]}=${line.replace(/local\s+\w+\s*=\s*/, '')}`);
+                result.push(`${var2[1]}=${next.replace(/local\s+\w+\s*=\s*/, '')}`);
+                result.push(`return ${var1[1]},${var2[1]} end`);
+                result.push(`local ${generateName()},${generateName()}=${name}()`);
+                i += 2;
+                continue;
+            }
+        }
+        
+        result.push(line);
+        i++;
+    }
+    
+    return result.join('\n');
+}
+
+// ==================== BYTECODE GENERATOR ====================
+function generateBytecode(code) {
+    const lines = code.split('\n');
+    let bytecode = [];
+    let byteVar = generateName();
+    
+    for (let line of lines) {
+        const trimmed = line.trim();
+        if (trimmed === '' || trimmed.startsWith('--')) continue;
+        
+        // Convertir cada línea a bytecode
+        const bytes = [];
+        for (let i = 0; i < trimmed.length; i++) {
+            bytes.push(trimmed.charCodeAt(i));
+        }
+        
+        // Ofuscar bytecode con XOR
+        const key = generateXORKey();
+        const encrypted = bytes.map(b => b ^ key);
+        
+        bytecode.push({
+            encrypted: encrypted.join(','),
+            key: key,
+            line: trimmed
+        });
+    }
+    
+    let result = `local ${byteVar} = {} `;
+    for (let i = 0; i < bytecode.length; i++) {
+        const b = bytecode[i];
+        result += `${byteVar}[${i}] = function() local t={${b.encrypted}} local s='' for i=1,#t do s=s..string.char(t[i]^${b.key}) end return s end `;
+    }
+    
+    // Ejecutar bytecode
+    result += `for i=0,#${byteVar} do loadstring(${byteVar}[i]())() end `;
+    
+    return result;
+}
+
+// ==================== VM PERSONALIZADA ====================
+function generateVM(originalCode) {
+    const lines = originalCode.split('\n');
+    const vmName = generateName();
+    const instructionTable = generateName();
+    const pc = generateName();
+    const stack = generateName();
+    const instructions = [];
+    let vmCode = '';
+    
+    // Generar instrucciones de VM
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line === '' || line.startsWith('--')) continue;
+        
+        const op = VM_OPS[Math.floor(Math.random() * VM_OPS.length)];
+        const a = Math.floor(Math.random() * 50);
+        const b = Math.floor(Math.random() * 50);
+        const c = Math.floor(Math.random() * 50);
+        
+        // Encriptar la línea
+        const key = generateXORKey();
+        const encrypted = [];
+        for (let j = 0; j < line.length; j++) {
+            encrypted.push(line.charCodeAt(j) ^ key);
+        }
+        
+        instructions.push({
+            op: op,
+            a: a,
+            b: b,
+            c: c,
+            encrypted: encrypted.join(','),
+            key: key
+        });
+    }
+    
+    vmCode = `
+local ${vmName} = {}
+local ${instructionTable} = {}
+local ${pc} = 0
+local ${stack} = {}
+
+-- Decryptor interno
+local function _dec(t,k)
+    local s = ''
+    for i=1,#t do
+        s = s .. string.char(t[i] ^ k)
+    end
+    return s
+end
+
+-- Instrucciones de VM
+`;
+
+    for (let i = 0; i < instructions.length; i++) {
+        const ins = instructions[i];
+        const decrypted = `_dec({${ins.encrypted}}, ${ins.key})`;
+        vmCode += `${instructionTable}[${i}] = { op = "${ins.op}", a = ${ins.a}, b = ${ins.b}, c = ${ins.c}, code = ${decrypted} }\n`;
+    }
+
+    vmCode += `
+function ${vmName}:execute()
+    while ${pc} < #${instructionTable} do
+        ${pc} = ${pc} + 1
+        local ins = ${instructionTable}[${pc}]
+        
+        if ins.op == "MOVE" then
+            ${stack}[ins.a] = ${stack}[ins.b]
+        elseif ins.op == "LOADK" then
+            ${stack}[ins.a] = ins.b
+        elseif ins.op == "LOADBOOL" then
+            ${stack}[ins.a] = ins.b ~= 0
+        elseif ins.op == "LOADNIL" then
+            for i = ins.a, ins.b do ${stack}[i] = nil end
+        elseif ins.op == "GETTABLE" then
+            ${stack}[ins.a] = ${stack}[ins.b][${stack}[ins.c]]
+        elseif ins.op == "SETTABLE" then
+            ${stack}[ins.a][${stack}[ins.b]] = ${stack}[ins.c]
+        elseif ins.op == "NEWTABLE" then
+            ${stack}[ins.a] = {}
+        elseif ins.op == "ADD" then
+            ${stack}[ins.a] = ${stack}[ins.b] + ${stack}[ins.c]
+        elseif ins.op == "SUB" then
+            ${stack}[ins.a] = ${stack}[ins.b] - ${stack}[ins.c]
+        elseif ins.op == "MUL" then
+            ${stack}[ins.a] = ${stack}[ins.b] * ${stack}[ins.c]
+        elseif ins.op == "DIV" then
+            ${stack}[ins.a] = ${stack}[ins.b] / ${stack}[ins.c]
+        elseif ins.op == "MOD" then
+            ${stack}[ins.a] = ${stack}[ins.b] % ${stack}[ins.c]
+        elseif ins.op == "CONCAT" then
+            local s = ""
+            for i = ins.a, ins.b do s = s .. tostring(${stack}[i]) end
+            ${stack}[ins.c] = s
+        elseif ins.op == "JMP" then
+            ${pc} = ${pc} + ins.b
+        elseif ins.op == "EQ" then
+            if ${stack}[ins.b] == ${stack}[ins.c] then ${pc} = ${pc} + 1 end
+        elseif ins.op == "LT" then
+            if ${stack}[ins.b] < ${stack}[ins.c] then ${pc} = ${pc} + 1 end
+        elseif ins.op == "LE" then
+            if ${stack}[ins.b] <= ${stack}[ins.c] then ${pc} = ${pc} + 1 end
+        elseif ins.op == "CALL" then
+            local args = {}
+            for i = ins.a + 1, ins.a + ins.c - 1 do
+                table.insert(args, ${stack}[i])
             end
-            error('AT:'..reason..'|'..table.concat(stack,'->'),0)
+            ${stack}[ins.a] = ${stack}[ins.a](unpack(args))
+        elseif ins.op == "RETURN" then
+            return ${stack}[ins.a]
+        elseif ins.op == "CLOSURE" then
+            ${stack}[ins.a] = function(...)
+                local args = {...}
+                ${pc} = ins.c
+                ${vmName}:execute()
+                return ${stack}[1]
+            end
         end
+    end
+end
+
+-- Ejecutar VM
+${vmName}:execute()
+`;
+
+    return vmCode;
+}
+
+// ==================== ANTI-DEBUG AVANZADO ====================
+function generateAntiDebug() {
+    return `
+local function _antiDebug()
+    -- Anti-Debug por tiempo
+    local t1 = os.clock()
+    for i = 1, 200000 do end
+    if os.clock() - t1 > 0.1 then
+        error("Debugging detected")
+    end
+    
+    -- Anti-Debug por debug.sethook
+    if debug and debug.sethook then
+        local hooked = false
+        debug.sethook(function() hooked = true end, "l", 1)
+        debug.sethook()
+        if hooked then
+            error("Hook detected")
+        end
+    end
+    
+    -- Anti-Debug por debug.getinfo
+    if debug and debug.getinfo then
+        local info = debug.getinfo(1)
+        if info and info.what and info.what ~= "main" and info.what ~= "Lua" then
+            error("Debug info tampered")
+        end
+    end
+    
+    -- Anti-Debug por pcall
+    local function _test() return true end
+    local ok, res = pcall(_test)
+    if not ok then
+        error("pcall tampered")
+    end
+    
+    return true
+end
+
+pcall(_antiDebug)
+_antiDebug = nil
+collectgarbage()
+`;
+}
+
+// ==================== ANTI-TAMPER COMPLETO ====================
+function generateAntiTamper() {
+    return `
+local function _chk()
+    local _err = error
+    local function _crash(r)
+        local s = {}
+        for i = 1, 20 do
+            local info = debug.getinfo(i)
+            if info then
+                s[#s + 1] = (info.short_src or '?') .. ':' .. (info.currentline or '?')
+            end
+        end
+        _err('AT:' .. r .. '|' .. table.concat(s, '->'), 0)
     end
     
     -- Anti-Debug
     pcall(function()
-        local _adT=os.clock()
-        for _=1,150000 do end
-        if os.clock()-_adT>5.0 then crash('AD:1') end
+        local t = os.clock()
+        for _ = 1, 150000 do end
+        if os.clock() - t > 5 then _crash('DB') end
     end)
     
     -- Anti-Hook
     pcall(function()
         if debug and debug.sethook then
-            local hookCalled = false
-            debug.sethook(function() hookCalled = true end, "l", 5)
-            debug.sethook()
-            if hookCalled then crash('HK') end
+            debug.sethook(function() _crash('HK') end)
         end
+    end)
+    
+    -- Anti-Metatable
+    pcall(function()
+        local mt = getmetatable(_G) or {}
+        if mt.__index and mt.__index ~= _G then _crash('MT') end
     end)
     
     -- Anti-Dump
     pcall(function()
-        if string.dump then
-            local orig = string.dump
-            string.dump = function() crash('DUMP') end
+        local f = string.dump
+        if f then
+            string.dump = function() _crash('DUMP') end
         end
     end)
     
-    -- Anti-Decompiler
+    -- Anti-GC
     pcall(function()
-        local env = getfenv()
-        if env and env._G then
-            local mt = getmetatable(env) or {}
-            mt.__index = function() crash('DEC') end
-            setmetatable(env, mt)
-        end
+        local t = {}
+        setmetatable(t, {__mode = 'v'})
+        t.x = 1
+        collectgarbage()
+        if t.x ~= nil then _crash('GC') end
     end)
     
-    -- Check Environment Integrity
+    -- Anti-Coroutine
     pcall(function()
-        local required = {'_G', 'debug', 'string', 'table', 'math', 'coroutine', 'os', 'pcall', 'xpcall'}
-        for _, name in ipairs(required) do
-            if _G[name] == nil then crash('ENV:'..name) end
-        end
-    end)
-    
-    -- Check Metatable
-    pcall(function()
-        local mt = getmetatable(_G) or {}
-        if mt.__index and mt.__index ~= _G then crash('MTI') end
-        if mt.__newindex and mt.__newindex ~= _G then crash('MTN') end
-    end)
-    
-    -- Check GC
-    pcall(function()
-        local m1 = collectgarbage('count')
-        local m2 = collectgarbage('count')
-        if m2 < m1 then crash('GC') end
+        local c = coroutine.create(function() return 1 end)
+        local o, r = coroutine.resume(c)
+        if not o or r ~= 1 then _crash('COR') end
     end)
     
     return true
 end
 
-local p,e=pcall(antiTamper)
-if not p then
-    while true do error('PF:'..tostring(e),0) end
-end
-antiTamper=nil
-p=nil
-e=nil
+pcall(_chk)
+_chk = nil
 collectgarbage()
 `;
-
-// ==================== XOR FUNCTION ====================
-function xorFunction() {
-    return `
-local function xor(a,b)
-    local result = 0
-    local bit = 1
-    while a > 0 or b > 0 do
-        local abit = a % 2
-        local bbit = b % 2
-        if abit ~= bbit then
-            result = result + bit
-        end
-        a = (a - abit) / 2
-        b = (b - bbit) / 2
-        bit = bit * 2
-    end
-    return result
-end
-`;
-}
-
-// ==================== VM BUILDER ====================
-function buildTrueVM(payloadStr) {
-    const seed = Math.floor(Math.random() * 97) + 31;
-    const multiplier = Math.floor(Math.random() * 9) + 3;
-    const shift = Math.floor(Math.random() * 21) + 5;
-
-    let currentKey = seed;
-    const encryptedBytes = [];
-    for (let i = 0; i < payloadStr.length; i++) {
-        const byte = payloadStr.charCodeAt(i);
-        const encrypted = (byte ^ currentKey) % 256;
-        encryptedBytes.push(`\\${String(encrypted).padStart(3, '0')}`);
-        currentKey = (currentKey * multiplier + shift) % 256;
-    }
-
-    const payloadString = encryptedBytes.join('');
-
-    const v_payload = generateCustomName();
-    const v_key = generateCustomName();
-    const v_exec = generateCustomName();
-    const v_i = generateCustomName();
-    const v_char = generateCustomName();
-    const v_buffer = generateCustomName();
-    const v_result = generateCustomName();
-
-    let bootstrap = `local ${v_payload}="${payloadString}" `;
-    bootstrap += `local ${v_key}=${seed} `;
-    bootstrap += `local ${v_exec}={} `;
-    bootstrap += xorFunction();
-    bootstrap += `for ${v_i}=1,#${v_payload} do `;
-    bootstrap += `local ${v_char}=string.byte(${v_payload},${v_i}) `;
-    bootstrap += `local ${v_buffer}=string.char(xor(${v_char},${v_key})) `;
-    bootstrap += `table.insert(${v_exec},${v_buffer}) `;
-    bootstrap += `${v_key}=(${v_key}*${multiplier}+${shift})%256 end `;
-
-    if (payloadStr.includes("http")) {
-        bootstrap += `local ${v_result}=table.concat(${v_exec}) assert(loadstring(game:HttpGet(${v_result})))() `;
-    } else {
-        bootstrap += `local ${v_result}=table.concat(${v_exec}) assert(loadstring(${v_result}))() `;
-    }
-
-    return bootstrap;
-}
-
-// ==================== FRAGILE VM ====================
-function buildFragileVM(innerCode, depth = 0) {
-    if (depth >= 40) return innerCode;
-
-    const vmName = generateCustomName();
-    const handlerCount = Math.floor(Math.random() * 5) + 3;
-    const realIdx = Math.floor(Math.random() * handlerCount);
-    const handlers = pickHandlers(handlerCount);
-
-    let out = `local ${vmName}={} local _h${depth}={`;
-    for (let i = 0; i < handlerCount; i++) {
-        if (i === realIdx) {
-            out += `[${i + 1}]=function(${vmName}) `;
-            out += `if ${vmName}[1]~=nil then error("VM corrupted") end `;
-            out += buildFragileVM(innerCode, depth + 1);
-            out += ` end,`;
-        } else {
-            out += `[${i + 1}]=function(${vmName}) return nil end,`;
-        }
-    }
-    out += `} `;
-
-    const execBlocks = [];
-    for (let i = 0; i < handlerCount; i++) {
-        execBlocks.push(`_h${depth}[${i + 1}](${vmName})`);
-    }
-    out += applyCFF(execBlocks);
-    return out;
-}
-
-// ==================== DYNAMIC TARGET SIZE ====================
-function getDynamicTargetSize(code) {
-    return Math.max(code.length * 3, 5000);
-}
-
-// ==================== DETECT AND APPLY MAPPINGS ====================
-function detectAndApplyMappings(code) {
-    const MAPEO = {
-        "ScreenGui":"Aggressive Renaming","Frame":"String to Math","TextLabel":"Table Indirection",
-        "TextButton":"Mixed Boolean Arithmetic","Humanoid":"Dynamic Junk","Player":"Fake Flow",
-        "RunService":"Virtual Machine","TweenService":"Fake Flow","Players":"Fake Flow",
-        "Workspace":"String to Math","ServerScriptService":"Aggressive Renaming",
-        "ReplicatedStorage":"Table Indirection","DataStoreService":"Mixed Boolean Arithmetic",
-        "RemoteEvent":"Table Indirection","RemoteFunction":"String to Math",
-        "ModuleScript":"Aggressive Renaming","Script":"Dynamic Junk"
-    };
-    let modified = code, headers = "";
-    for (const [word, tech] of Object.entries(MAPEO)) {
-        const regex = new RegExp(`\\b${word}\\b`, "g");
-        if (regex.test(modified)) {
-            let replacement = `"${word}"`;
-            if (tech.includes("Aggressive Renaming")) {
-                const v = generateCustomName();
-                headers += `local ${v}="${word}";`;
-                replacement = v;
-            }
-            else if (tech.includes("String to Math")) {
-                replacement = `string.char(${word.split('').map(c => c.charCodeAt(0)).join(',')})`;
-            }
-            else if (tech.includes("Mixed Boolean Arithmetic")) {
-                replacement = `((${mba()}==1 or true)and"${word}")`;
-            }
-            else if (tech.includes("Table Indirection")) {
-                const t = generateCustomName();
-                headers += `local ${t}={["${word}"]="${word}"};`;
-                replacement = `${t}["${word}"]`;
-            }
-            else if (tech.includes("Virtual Machine")) {
-                const t = generateCustomName();
-                headers += `local ${t}=function() return "${word}" end;`;
-                replacement = `${t}()`;
-            }
-            else if (tech.includes("Dynamic Junk")) {
-                replacement = `(function() return "${word}" end)()`;
-            }
-            else if (tech.includes("Fake Flow")) {
-                const t = generateCustomName();
-                headers += `local ${t}=${Math.random() > 0.5 ? 'true' : 'false'};`;
-                replacement = `(${t} and "${word}" or "${word}")`;
-            }
-            regex.lastIndex = 0;
-            modified = modified.replace(regex, () => `game[${replacement}]`);
-        }
-    }
-    return headers + modified;
-}
-
-// ==================== REMOVE COMMENTS ====================
-function removeComments(code) {
-    return code
-      .replace(/--\[\[[\s\S]*?\]\]/g, '')
-      .replace(/--[^\n]*/g, '');
 }
 
 // ==================== FUNCIÓN PRINCIPAL ====================
 function obfuscate(sourceCode) {
     if (!sourceCode || typeof sourceCode !== 'string') {
-        return '-- Error: No valid source code provided';
+        return '-- Error: No source code provided';
     }
-
+    
     try {
         let code = sourceCode;
-
+        
         // 1. Remover comentarios
         code = removeComments(code);
-
-        // 2. Detectar y aplicar mapeos
-        code = detectAndApplyMappings(code);
-
-        // 3. Ofuscar strings
-        if (CONFIG.encryptStrings) {
-            code = encryptStrings(code);
-        }
-
+        
+        // 2. Ofuscar strings (simple)
+        code = obfuscateStrings(code);
+        
+        // 3. Ofuscar strings con XOR
+        code = obfuscateStringsXOR(code);
+        
         // 4. Ofuscar números
-        if (CONFIG.encryptNumbers) {
-            code = obfuscateNumbers(code);
-        }
-
+        code = obfuscateNumbers(code);
+        
         // 5. Renombrar variables
-        code = renameVariables(code);
-
+        code = renameLocals(code);
+        
         // 6. Insertar código muerto
-        if (CONFIG.useJunkCode) {
-            code = insertDeadCode(code);
-        }
-
-        // 7. Control Flow Graph
-        if (CONFIG.useCFG) {
-            code = generateCFG(code);
-        }
-
-        // 8. Inlining
-        if (CONFIG.useInlining) {
-            code = simulateInlining(code);
-        }
-
-        // 9. Super Operadores
-        if (CONFIG.useSuperOperators) {
-            code = generateSuperOperators(code);
-        }
-
-        // 10. Mutaciones
-        if (CONFIG.useMutations) {
-            code = generateMutations(code);
-        }
-
-        // 11. Minificar
-        code = minify(code);
-
-        // 12. Construir VM
-        let vm = buildTrueVM(code);
-        vm = buildFragileVM(vm, 0);
-
+        code = insertDeadCode(code);
+        
+        // 7. Control Flow Flattening
+        code = flattenControlFlow(code);
+        
+        // 8. Super Operadores
+        code = generateSuperOperators(code);
+        
+        // 9. Generar Bytecode
+        const bytecode = generateBytecode(code);
+        
+        // 10. Generar VM
+        const vm = generateVM(code);
+        
+        // 11. Generar Anti-Debug
+        const antiDebug = generateAntiDebug();
+        
+        // 12. Generar Anti-Tamper
+        const antiTamper = generateAntiTamper();
+        
         // 13. Combinar todo
-        let finalCode = HEADER + '\n\n';
+        let finalCode = HEADER + '\n';
+        finalCode += antiDebug + '\n';
+        finalCode += antiTamper + '\n';
+        finalCode += bytecode + '\n';
+        finalCode += vm + '\n';
         
-        if (CONFIG.useAntiTamper) {
-            finalCode += ANTI_TAMPER_LUA + '\n';
-        }
+        // 14. Minificar todo
+        finalCode = finalCode
+            .replace(/\s+/g, ' ')
+            .replace(/;\s*/g, ';')
+            .replace(/,\s*/g, ',')
+            .replace(/\(\s*/g, '(')
+            .replace(/\s*\)/g, ')')
+            .replace(/\s*=\s*/g, '=')
+            .replace(/\s*\+\s*/g, '+')
+            .replace(/\s*-\s*/g, '-')
+            .replace(/\s*\*\s*/g, '*')
+            .replace(/\s*\/\s*/g, '/')
+            .replace(/\s*%\s*/g, '%')
+            .replace(/\s*\.\.\s*/g, '..')
+            .replace(/\s*==\s*/g, '==')
+            .replace(/\s*~=\s*/g, '~=')
+            .replace(/\s*<=\s*/g, '<=')
+            .replace(/\s*>=\s*/g, '>=')
+            .replace(/\s*<\s*/g, '<')
+            .replace(/\s*>\s*/g, '>')
+            .replace(/\s*and\s*/g, ' and ')
+            .replace(/\s*or\s*/g, ' or ')
+            .replace(/\s*not\s*/g, ' not ')
+            .trim();
         
-        finalCode += vm;
-
-        // 14. Padding para tamaño dinámico
-        const targetSize = getDynamicTargetSize(sourceCode);
+        // 15. Padding
+        const targetSize = Math.max(sourceCode.length * 4, 5000);
         const currentLen = finalCode.length;
-        const bytesNeeded = targetSize - currentLen;
-        if (bytesNeeded > 7) {
-            finalCode += ` --[[${'X'.repeat(Math.min(bytesNeeded - 7, 50000))}]]`;
+        if (currentLen < targetSize) {
+            const padding = 'X'.repeat(Math.min(targetSize - currentLen, 50000));
+            finalCode = finalCode + ` --[[${padding}]]`;
         }
-
+        
         return finalCode;
-
-    } catch (error) {
-        console.error('Obfuscation error:', error);
-        return `-- Error during obfuscation: ${error.message}`;
+        
+    } catch (err) {
+        return `-- Error: ${err.message}`;
     }
 }
 
 // ==================== EXPORTAR ====================
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
+    module.exports = { 
         obfuscate,
-        CONFIG,
-        generateCustomName,
-        pickHandlers,
-        applyCFF,
-        mba,
-        generateCFG,
-        simulateInlining,
+        generateAntiDebug,
+        generateAntiTamper,
+        generateBytecode,
+        generateVM,
         generateSuperOperators,
-        generateMutations,
-        encryptStrings,
-        obfuscateNumbers,
-        renameVariables,
+        flattenControlFlow,
         insertDeadCode,
-        minify,
-        buildTrueVM,
-        buildFragileVM,
-        getDynamicTargetSize,
-        detectAndApplyMappings,
+        renameLocals,
+        obfuscateNumbers,
+        obfuscateStrings,
+        obfuscateStringsXOR,
         removeComments,
-        ANTI_TAMPER_LUA
+        generateName,
+        generateHandler,
+        generateXORKey
     };
 }
 
@@ -898,7 +735,7 @@ if (require.main === module) {
         local result = hello("User")
         print(result)
     `;
-
+    
     console.log("=== CÓDIGO OFUSCADO ===");
     const obfuscated = obfuscate(testCode);
     console.log(obfuscated);
