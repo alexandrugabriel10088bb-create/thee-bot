@@ -8,12 +8,19 @@ const axios = require('axios');
 
 const { obfuscate } = require('./obfuscator.js');
 
+// ----------------------------------------------------------------------
+// SERVER CONFIG
+// ----------------------------------------------------------------------
+const GUILD_ID = process.env.GUILD_ID || 'your-guild-id';
+const AUTO_ROLE_ID = process.env.AUTO_ROLE_ID || 'your-auto-role-id';
+
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.GuildMembers,
     ],
 });
 
@@ -22,12 +29,39 @@ client.once('ready', () => {
     registerCommands();
 });
 
-// Slash command registration
+// ----------------------------------------------------------------------
+// AUTO ROLE
+// ----------------------------------------------------------------------
+client.on('guildMemberAdd', async member => {
+    if (member.guild.id !== GUILD_ID) return;
+    try {
+        await member.roles.add(AUTO_ROLE_ID);
+        console.log(`Assigned role ${AUTO_ROLE_ID} to ${member.user.tag}`);
+    } catch (err) {
+        console.error(`Failed to assign auto role: ${err.message}`);
+    }
+});
+
+// ----------------------------------------------------------------------
+// SLASH COMMAND REGISTRATION
+// ----------------------------------------------------------------------
 async function registerCommands() {
     const commands = [
         new SlashCommandBuilder()
-            .setName('obf')
+            .setName('obfuscate')
             .setDescription('Obfuscate your Lua code')
+            .addStringOption(opt =>
+                opt.setName('code')
+                    .setDescription('Lua code to obfuscate')
+                    .setRequired(false))
+            .addAttachmentOption(opt =>
+                opt.setName('file')
+                    .setDescription('Lua file to obfuscate')
+                    .setRequired(false)),
+
+        new SlashCommandBuilder()
+            .setName('obf')
+            .setDescription('Obfuscate your Lua code (alias)')
             .addStringOption(opt =>
                 opt.setName('code')
                     .setDescription('Lua code to obfuscate')
@@ -44,6 +78,10 @@ async function registerCommands() {
                 opt.setName('code').setDescription('Code to upload').setRequired(false))
             .addAttachmentOption(opt =>
                 opt.setName('file').setDescription('File to upload').setRequired(false)),
+
+        new SlashCommandBuilder()
+            .setName('help')
+            .setDescription('Show available commands'),
     ];
 
     try {
@@ -58,14 +96,22 @@ client.on('interactionCreate', async interaction => {
     try {
         if (!interaction.isChatInputCommand()) return;
 
-        if (interaction.commandName === 'obf') await handleObf(interaction);
-        if (interaction.commandName === 'upload') await handleUpload(interaction);
+        if (interaction.commandName === 'obfuscate' || interaction.commandName === 'obf') {
+            await handleObfuscate(interaction);
+        } else if (interaction.commandName === 'upload') {
+            await handleUpload(interaction);
+        } else if (interaction.commandName === 'help') {
+            await handleHelp(interaction);
+        }
     } catch (err) {
         console.error('Interaction error:', err);
     }
 });
 
-async function handleObf(interaction) {
+// ----------------------------------------------------------------------
+// COMMAND HANDLERS
+// ----------------------------------------------------------------------
+async function handleObfuscate(interaction) {
     const code = interaction.options.getString('code');
     const file = interaction.options.getAttachment('file');
 
@@ -88,14 +134,14 @@ async function handleObf(interaction) {
     await interaction.deferReply({ ephemeral: true });
     try {
         const obfuscated = obfuscate(srcCode);
-        await deliverResult(interaction, srcCode, obfuscated);
+        await deliverObfuscationResult(interaction, srcCode, obfuscated);
     } catch (err) {
         console.error(err);
         await interaction.editReply({ content: `Error during obfuscation: ${err.message}` });
     }
 }
 
-async function deliverResult(interaction, original, obfuscated) {
+async function deliverObfuscationResult(interaction, original, obfuscated) {
     const fileBuffer = Buffer.from(obfuscated, 'utf-8');
     const attachment = new AttachmentBuilder(fileBuffer, { name: 'obfuscated.lua' });
 
@@ -158,6 +204,22 @@ async function handleUpload(interaction) {
     } catch (err) {
         await interaction.editReply({ content: `Upload failed: ${err.message}` });
     }
+}
+
+async function handleHelp(interaction) {
+    const embed = new EmbedBuilder()
+        .setColor(0x9B59B6)
+        .setTitle('Available Commands')
+        .setDescription('All commands are slash commands.')
+        .addFields(
+            { name: '/obfuscate', value: 'Obfuscate Lua code or a .lua file. Returns the obfuscated file in DMs and as a reply.', inline: false },
+            { name: '/obf', value: 'Alias of /obfuscate.', inline: false },
+            { name: '/upload', value: 'Upload Lua code or a file to Pastefy.', inline: false },
+            { name: '/help', value: 'Show this help message.', inline: false },
+        )
+        .setFooter({ text: 'Eclipse Obfuscator v3' });
+
+    await interaction.reply({ embeds: [embed], ephemeral: true });
 }
 
 async function uploadToPastefy(code) {
