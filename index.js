@@ -226,7 +226,7 @@ async function handleHelp(interaction) {
         .setDescription('All commands are slash commands.')
         .addFields(
             { name: '/obfuscate', value: 'Obfuscate Lua code or a .lua file. The obfuscated file will be sent to your DMs.', inline: false },
-            { name: '/obf', value: same of /obfuscate.', inline: false },
+            { name: '/obf', value: 'Alias of /obfuscate.', inline: false },
             { name: '/upload', value: 'Upload Lua code or a file to Pastefy.', inline: false },
             { name: '/help', value: 'Show this help message.', inline: false },
         )
