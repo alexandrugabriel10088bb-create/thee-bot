@@ -1,503 +1,736 @@
---[[ Discord is protected by banana obfuscator ]]
+const fs = require('fs');
 
--- ==================== CONFIGURACIÓN ====================
-local CUSTOM_VARS = {
-    "etr", "tr", "x", "y", "z", "a", "b", "c", "d", "e", "f", "g", "h",
-    "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v",
-    "w", "x1", "y1", "z1", "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1"
+// ==================== CONFIGURACIÓN ====================
+const HEADER = `--[[ LAURA VM v4.0 - PROTECTED WITH ANTI-TAMPER + OPCodes ]]`;
+const CUSTOM_VARS = [
+    "Laura", "Maria", "Jose", "Carlos", "Ana", "Pedro", "Juan", "Luis",
+    "shield", "guardian", "phantom", "shadow", "eagle", "tiger", "dragon",
+    "data", "temp", "result", "value", "index", "count", "total", "amount",
+    "position", "status", "flags", "config", "cache", "buffer", "stream",
+    "packet", "frame", "token", "session", "client", "server", "node",
+    "table_data", "string_data", "number_data", "boolean_data", "nil_data",
+    "function_data", "thread_data", "userdata_data"
+];
+
+const HANDLER_POOL = ["KQ","HF","W8","SX","Rj","nT","pL","qZ","mV","xB","yC","wD","AZ","BY","CX","DV","EW","FU","GT","HS","IR","JQ","KP","LO","MN","OP","QR","ST","UV","WX","YZ"];
+
+const JUNK_LINES = 500;
+const MAX_VM_ITERATIONS = 9999999;
+
+// ==================== FUNCIONES AUXILIARES ====================
+
+function randomName() {
+    const base = CUSTOM_VARS[Math.floor(Math.random() * CUSTOM_VARS.length)];
+    const suffix = Math.floor(Math.random() * 999999);
+    const prefixes = ["", "get_", "set_", "is_", "has_", "on_", "do_", "check_", "verify_", "validate_", "process_", "handle_", "execute_", "guard_", "protect_"];
+    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    return prefix + base + "_" + suffix;
 }
 
-local HANDLER_POOL = {"KQ","HF","W8","SX","Rj","nT","pL","qZ","mV","xB","yC","wD"}
-
--- ==================== BYTECODE OPCODES ====================
-local OPCODES = {
-    OP_LOAD = 0x01, OP_STORE = 0x02, OP_ADD = 0x03, OP_SUB = 0x04,
-    OP_MUL = 0x05, OP_DIV = 0x06, OP_MOD = 0x07, OP_POW = 0x08,
-    OP_CONCAT = 0x09, OP_CMP = 0x0A, OP_JMP = 0x0B, OP_CALL = 0x0C,
-    OP_RET = 0x0D, OP_TABLE = 0x0E, OP_GET = 0x0F, OP_SET = 0x10,
-    OP_FUNC = 0x11, OP_CLOSE = 0x12, OP_VAR = 0x13, OP_UPVAL = 0x14,
-    OP_GLOBAL = 0x15, OP_META = 0x16, OP_TYPE = 0x17, OP_STR = 0x18,
-    OP_NUM = 0x19, OP_BOOL = 0x1A, OP_NIL = 0x1B, OP_DUP = 0x1C,
-    OP_SWAP = 0x1D, OP_ROT = 0x1E, OP_PUSH = 0x1F, OP_POP = 0x20,
-    OP_XOR = 0x21, OP_SHL = 0x22, OP_SHR = 0x23, OP_NOT = 0x24,
-    OP_AND = 0x25, OP_OR = 0x26, OP_BAND = 0x27, OP_BOR = 0x28,
-    OP_BNOT = 0x29, OP_ENV = 0x2A, OP_DEC = 0xC4, OP_COMP = 0x11E,
-    OP_STOP = 0x136, OP_LOADK = 0x2B, OP_MOVE = 0x2C, OP_LEN = 0x2D,
-    OP_FORLOOP = 0x2E, OP_FORPREP = 0x2F, OP_TFORLOOP = 0x30,
-    OP_SETLIST = 0x31, OP_SETUPVAL = 0x32, OP_GETUPVAL = 0x33,
-    OP_NEWTABLE = 0x34, OP_SELF = 0x35, OP_EQ = 0x36, OP_LT = 0x37,
-    OP_LE = 0x38, OP_NE = 0x39, OP_GT = 0x3A, OP_GE = 0x3B
+function randomNumber() {
+    return Math.floor(Math.random() * 1000000) + 1;
 }
 
--- ==================== ANTI-TAMPER ORIGINAL ====================
-local ANTI_TAMPER = [[
-local function f()local function g()local h={}local function i(t)if h[t]then return end h[t]=true if type(t)~="table"then return end for k,v in pairs(t)do if type(v)=="table"and not h[v]then i(v)end end table.freeze(t)end pcall(function()i(_G)end)local j={"getinfo","getupvalue","setupvalue","getlocal","setlocal","getmetatable","setmetatable","getregistry","getfenv","setfenv","getconstants","getconstant","getprotos","getuservalue","setuservalue"}for _,k in ipairs(j)do pcall(function()debug[k]=nil end)end pcall(function()getfenv=nil setfenv=nil loadstring=nil load=nil end)local l={}setmetatable(l,{__index=function(t,k)if k=="_G"or k=="getfenv"or k=="setfenv"then return nil end return rawget(t,k)end,__newindex=function(t,k,v)rawset(t,k,v)end,__metatable="SECURE"})setfenv(1,l)end local function m()local function n(r)while true do local s={}for i=1,10 do local t=debug.getinfo(i,"S")if t then table.insert(s,t.short_src or"?")end end error("TAMPER:"..r.."|"..table.concat(s,"->"),0)end end pcall(function()local u=getmetatable(_G)or{}if u.__index or u.__newindex then if u.__index then local v=false for k,_ in pairs(_G)do if k=="env"or k=="logger"or k=="spy"then v=true break end end if v then n("ENV_LOGGER")end end end local w={}local x,y=pcall(function()setmetatable(w,{})getmetatable(w)end)if not x then n("METATABLE")end local z={}for k,_ in pairs(_G)do z[k]=true end if #z>1000 then n("ENV_OVERFLOW")end end)pcall(function()local A=pcall(function()return debug.getinfo(1,"S")end)if not A then n("DEBUG_DISABLED")end local B=false local C=function()B=true end debug.sethook(C,"l")debug.sethook()if B then n("HOOK")end local D,E=pcall(function()debug.getinfo(999999,"S")end)if E and string.find(E,"invalid level")then n("BREAKPOINT")end end)pcall(function()local F="test"local G=buffer.fromstring(F)local H=buffer.tostring(G)if H~=F then n("MEMORY")end local I=buffer.create(4)buffer.writeu8(I,0,255)if buffer.readu8(I,0)~=255 then n("BUFFER")end local J,K=pcall(function()local L=buffer.create(1024)for i=1,1024 do buffer.writeu8(L,i-1,i%256)end end)if not K then n("MEMORY_ACCESS")end end)pcall(function()local M={"Players","Workspace","ServerScriptService","ReplicatedStorage","RunService","HttpService","MarketplaceService","DataStoreService"}for _,N in ipairs(M)do local O,P=pcall(function()return game:GetService(N)end)if not O then n("SERVICE:"..N)end if P and type(P)~="Instance"then n("SERVICE_INVALID:"..N)end end local Q,R=pcall(function()local S=Instance.new("Part")S.Name="Guard" S.Parent=workspace S:Destroy()end)if R then n("INSTANCE")end local T,U=pcall(function()return game:GetService("AssetService"):CreateEditableMesh()end)if T and U then local V=U:AddVertex(Vector3.new(0,0,0))if not V then n("MESH")end U:Destroy()end end)pcall(function()local W=coroutine.create(function()coroutine.yield(1)end)local X,Y=coroutine.resume(W)if not X or Y~=1 then n("COROUTINE")end local Z=0 for _ in pairs(coroutine)do Z=Z+1 end if Z<1 then n("THREAD")end end)pcall(function()local _=os.clock()local aa=0 for i=1,100000 do aa=aa+i end local ab=os.clock()-_ if ab>0.1 then n("PERFORMANCE")end local ac=os.time()local ad=os.time()if ad<ac then n("TIME")end end)pcall(function()local ae={"pcall","xpcall","error","assert","type","rawget","rawset","next","pairs","ipairs","select","tonumber","tostring"}for _,af in ipairs(ae)do if type(_G[af])~="function"then n("FUNC_MISS:"..af)end end end)return true end local function ag()local function ah(ai)while true do error("LOGGER:"..ai,0)end end pcall(function()local aj={"logger","log","debug","spy","monitor","hook","inject","dump","trace","profile","benchmark","performance","record","capture","snapshot","clone","copy"}for _,ak in ipairs(aj)do if _G[ak]~=nil then ah("KEY:"..ak)end end local al=getmetatable(_G)or{}if al.__index and type(al.__index)=="function"then local am=pcall(function()al.__index(_G,"test_key")end)if am then ah("METATABLE_INDEX")end end end)pcall(function()local an={}local function ao()end local ap=pcall(function()return debug.getinfo(ao,"S")end)if ap then ah("FUNCTION_CAPTURE")end end)pcall(function()local aq={}local ar,as=pcall(function()for k,v in pairs(_G)do aq[k]=true end end)if ar and #aq>0 then local at=getmetatable(_G)or{}if at.__newindex then local au="__guard__"local av=_G[au]_G[au]="test"if _G[au]~="test"then ah("ENV_CHANGE")end _G[au]=av end end end)pcall(function()local aw={"io","os","print","warn","error"}for _,ax in ipairs(aw)do if _G[ax]and type(_G[ax])=="function"then local ay=_G[ax]_G[ax]=nil if _G[ax]~=nil then ah("OVERRIDE:"..ax)end _G[ax]=ay end end end)return true end local function az()local function aA()while true do local aB,aC=pcall(function()local aD=getmetatable(_G)or{}if aD.__index or aD.__newindex then local aE=pcall(function()aD.__index=nil aD.__newindex=nil setmetatable(_G,{})end)if not aE then error("LOGGER_ACTIVE")end end local aF=debug.getinfo(1,"S")if aF and aF.short_src=="[C]"then error("C_HOOK")end end)if not aB then while true do error("GUARDIAN:"..tostring(aC),0)end end local aG=os.clock()while os.clock()-aG<0.001 do end end end local aH=coroutine.create(aA)local aI,aJ=coroutine.resume(aH)if not aI then error("THREAD_FAIL:"..tostring(aJ),0)end return aH end local function aK()g()local aL,aM=pcall(m)if not aL then error("ANTI_TAMPER:"..tostring(aM),0)end local aN,aO=pcall(ag)if not aN then error("ANTI_LOGGER:"..tostring(aO),0)end local aP=pcall(az)if not aP then error("THREAD_GUARDIAN",0)end return true,"OK"end local aQ,aR=pcall(aK)if not aQ then while true do local aS={}for i=1,10 do local aT=debug.getinfo(i,"S")if aT then table.insert(aS,aT.short_src or"?")end end error("INIT_FAIL:"..aR.."|"..table.concat(aS,"->"),0)end end pcall(function()local aU=getfenv()if aU and type(aU)=="table"then local aV=getmetatable(aU)or{}if aV.__metatable~="SECURE"then error("COMPROMISED",0)end end end)return true,"ACTIVE"end return f()
-]]
-
--- ==================== FUNCIONES DE OFUSCACIÓN ====================
-local function generateCustomName()
-    local base = CUSTOM_VARS[math.random(1, #CUSTOM_VARS)]
-    local suffix = math.random(1, 999999)
-    local prefixes = {"", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
-    local prefix = prefixes[math.random(1, #prefixes)]
-    return prefix .. base .. "_" .. suffix
-end
-
-local function generateJunk(lines)
-    lines = lines or 250
-    local j = {}
-    local junkTypes = {
-        function() return "local " .. generateCustomName() .. "=" .. math.random(1, 99999) end,
-        function() return "local " .. generateCustomName() .. "=string.char(" .. math.random(1, 255) .. ")" end,
-        function() return "local " .. generateCustomName() .. "=function()return " .. math.random() * 1000 .. "end" end,
-        function() return "local " .. generateCustomName() .. "={}" .. generateCustomName() .. "[1]=\"" .. generateCustomName() .. "\"" end,
-        function() return "if not(1==1)then local x=1 end" end,
-        function() return "if false then local " .. generateCustomName() .. "=1 end" end,
-        function() return "if type(nil)==\"number\"then local " .. generateCustomName() .. "=1 end" end,
-        function() return "while false do local " .. generateCustomName() .. "=1 end" end,
-        function() return "repeat local " .. generateCustomName() .. "=1 until true" end,
-        function() return "do local " .. generateCustomName() .. "={}" .. generateCustomName() .. "[\"_\"\"]=1 " .. generateCustomName() .. "=nil end" end,
-        function() return "local " .. generateCustomName() .. "=math.floor(" .. math.random() * 1000 .. ")+" .. math.random(1, 100) end,
-        function() return "local function " .. generateCustomName() .. "()local " .. generateCustomName() .. "=1 return " .. generateCustomName() .. "end" end,
-        function() return "local " .. generateCustomName() .. "={}" .. generateCustomName() .. "=1," .. generateCustomName() .. "=2" end,
-        function() return "local " .. generateCustomName() .. "=bit32.bxor(" .. math.random(1,255) .. "," .. math.random(1,255) .. ")" end,
-        function() return "local " .. generateCustomName() .. "=string.gsub(\"t\",\"t\",\"" .. generateCustomName() .. "\")" end
+function randomString(length = 20) {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars[Math.floor(Math.random() * chars.length)];
     }
-    for i = 1, lines do
-        local randomIndex = math.random(1, #junkTypes)
-        table.insert(j, junkTypes[randomIndex]())
-        if math.random() < 0.02 then
-            table.insert(j, "\n")
-        end
-    end
-    return table.concat(j, " ")
-end
+    return result;
+}
 
-local function detectAndApplyMappings(code)
-    local MAPEO = {
-        ["ScreenGui"] = "etr_ui", ["Frame"] = "etr_fr", ["TextLabel"] = "etr_lb",
-        ["TextButton"] = "etr_bt", ["Humanoid"] = "etr_ch", ["Player"] = "etr_us",
-        ["RunService"] = "etr_rs", ["TweenService"] = "etr_ts", ["Players"] = "etr_pl",
-        ["Workspace"] = "etr_wp", ["ReplicatedStorage"] = "etr_rsd",
-        ["ServerScriptService"] = "etr_ss", ["DataStoreService"] = "etr_ds",
-        ["HttpService"] = "etr_http", ["MarketplaceService"] = "etr_mk"
+function obfuscateNumber(n) {
+    const a = Math.floor(Math.random() * 1000) + 1;
+    const b = n ^ a;
+    const c = Math.floor(Math.random() * 100) + 1;
+    return `(((${a} ^ ${b}) + ${c}) - ${c})`;
+}
+
+function obfuscateString(str) {
+    let result = '';
+    for (let i = 0; i < str.length; i++) {
+        const charCode = str.charCodeAt(i);
+        const xorKey = Math.floor(Math.random() * 255) + 1;
+        const obfuscated = charCode ^ xorKey;
+        result += `string.char(${obfuscated} ^ ${xorKey})`;
+        if (i < str.length - 1) result += ' .. ';
     }
-    
-    local modified = code
-    local headers = {}
-    
-    for original, replacement in pairs(MAPEO) do
-        local pattern = "%f[%a]" .. original .. "%f[%A]"
-        if string.find(modified, pattern) then
-            local varName = generateCustomName()
-            table.insert(headers, "local " .. varName .. "=\"" .. original .. "\"")
-            modified = string.gsub(modified, pattern, "game[" .. varName .. "]")
-        end
-    end
-    
-    modified = string.gsub(modified, "\"([^\"]+)\"", function(content)
-        if #content > 2 and math.random() > 0.3 then
-            local varName = generateCustomName()
-            table.insert(headers, "local " .. varName .. "=\"" .. content .. "\"")
-            return varName
-        end
-        return "\"" .. content .. "\""
-    end)
-    
-    modified = string.gsub(modified, "%f[%d](%d+)%f[%D]", function(number)
-        local num = tonumber(number)
-        if num > 10 and math.random() > 0.4 then
-            local varName = generateCustomName()
-            table.insert(headers, "local " .. varName .. "=" .. num)
-            return varName
-        end
-        return number
-    end)
-    
-    return table.concat(headers, " ") .. modified
-end
+    return result;
+}
 
-local function getProtections()
-    local antiDebuggers = [[
-local etr_c=os.clock()local etr_n=0 for etr_i=1,300000 do etr_n=etr_n+1 if os.clock()-etr_c>5.0 then error()end end
-if debug and debug.getinfo then local etr_i=debug.getinfo(1)if etr_i and etr_i.what~="main"and etr_i.what~="Lua"then error()end end
-if debug and debug.sethook then debug.sethook(function()error()end,"l",1)end
-if bit32 then local etr_t=bit32.bxor(123,456)if etr_t~=435 then error()end end
-]]
-    
-    local rawTampers = {
-        "if math.pi<3.14 or math.pi>3.15 then error()end",
-        "if type(tostring)~=\"function\"then error()end",
-        "if not string.match(\"t\",\"^t.*t$\")then error()end",
-        "if type({})~=\"table\"then error()end",
-        "if type(1)~=\"number\"then error()end",
-        "if type(\"a\")~=\"string\"then error()end",
-        "if type(true)~=\"boolean\"then error()end",
-        "if type(nil)~=\"nil\"then error()end",
-        "if type(function()end)~=\"function\"then error()end",
-        "if type(game)~=\"userdata\"then error()end",
-        "if type(workspace)~=\"userdata\"then error()end",
-        "if type(Instance)~=\"function\"then error()end",
-        "if type(getfenv)~=\"function\"then error()end",
-        "if type(setfenv)~=\"function\"then error()end",
-        "if type(coroutine)~=\"table\"then error()end",
-        "if type(string)~=\"table\"then error()end",
-        "if type(math)~=\"table\"then error()end",
-        "if type(table)~=\"table\"then error()end"
+function generateJunk(lines) {
+    let junk = '';
+    for (let i = 0; i < lines; i++) {
+        const r = Math.random();
+        const name1 = randomName();
+        const name2 = randomName();
+        const num1 = randomNumber();
+        const num2 = randomNumber();
+        
+        if (r < 0.05) {
+            junk += `local ${name1}=${num1} `;
+        } else if (r < 0.10) {
+            junk += `local ${name1}=string.char(${num1%256}) `;
+        } else if (r < 0.15) {
+            junk += `if ${name1} then local x=1 end `;
+        } else if (r < 0.20) {
+            junk += `do local ${name1}={} ${name1}.x=${num1} end `;
+        } else if (r < 0.25) {
+            junk += `while false do local ${name1}=1 end `;
+        } else if (r < 0.30) {
+            junk += `local function ${name1}() local ${name2}=${num1} return ${name2} end `;
+        } else if (r < 0.35) {
+            junk += `local ${name1}=function() local ${name2}=${num1} return ${name2} end `;
+        } else if (r < 0.40) {
+            junk += `if type(${num1}) == "number" then local ${name1}=1 else local ${name2}=2 end `;
+        } else if (r < 0.45) {
+            junk += `local ${name1}=math.floor(${Math.random() * 1000}) `;
+        } else if (r < 0.50) {
+            junk += `local ${name1}=${randomName()} or ${num1} `;
+        } else if (r < 0.55) {
+            junk += `local ${name1}=${num1} + ${num2} `;
+        } else if (r < 0.60) {
+            junk += `local ${name1}=${num1} * ${num2} `;
+        } else if (r < 0.65) {
+            junk += `local ${name1}=${num1} / ${num2} `;
+        } else if (r < 0.70) {
+            junk += `local ${name1}=${num1} % ${num2} `;
+        } else if (r < 0.75) {
+            junk += `local ${name1}=bit32.bxor(${num1}, ${num2}) `;
+        } else if (r < 0.80) {
+            junk += `local ${name1}=bit32.band(${num1}, ${num2}) `;
+        } else if (r < 0.85) {
+            junk += `local ${name1}=bit32.bor(${num1}, ${num2}) `;
+        } else if (r < 0.90) {
+            junk += `local ${name1}=string.sub("${randomString(20)}", ${num1%10}, ${num2%10}) `;
+        } else if (r < 0.95) {
+            junk += `local ${name1}=string.gsub("${randomString(15)}", "a", "b") `;
+        } else {
+            junk += `local ${name1}=string.match("${randomString(10)}", "${randomString(3)}") `;
+        }
+        
+        if (i % 5 === 0) junk += '\n';
     }
-    
-    local codeVaultGuards = ""
-    for _, t in ipairs(rawTampers) do
-        local fnName = generateCustomName()
-        codeVaultGuards = codeVaultGuards .. "local " .. fnName .. "=function()" .. t .. "end " .. fnName .. "()"
-    end
-    
-    return antiDebuggers .. codeVaultGuards
-end
+    return junk;
+}
 
--- ==================== BYTECODE VM MEJORADA ====================
-local function buildBytecodeVM(payloadStr)
-    local bytecodeData = generateCustomName()
-    local vmState = generateCustomName()
-    local vmStack = generateCustomName()
-    local vmRegs = generateCustomName()
-    local vmPC = generateCustomName()
-    local vmRunning = generateCustomName()
-    
-    local seed1 = math.random(1, 255)
-    local seed2 = math.random(1, 255)
-    local seed3 = math.random(1, 255)
-    
-    local bytecode = {}
-    local key = (seed1 + seed2 + seed3) % 256
-    
-    for i = 1, #payloadStr do
-        local val = string.byte(payloadStr, i)
-        local xorKey = (key + i * 7 + 13) % 256
-        table.insert(bytecode, string.char(val ~ xorKey))
-    end
-    
-    local bytecodeStr = table.concat(bytecode)
-    
-    local vm = string.format([[
-local %s=[[%s]]
-local %s=1
-local %s={}
-local %s={}
-local %s=1
-local %s=true
+// ==================== ANTI-TAMPER COMPLETO ====================
 
-local function %s()
-    local %s=os.clock()*1000%%256
-    local %s=%d
-    local %s=%d
-    local %s=%d
-    local %s=(%s+%s+%s)%%256
+function generateFullAntiTamper() {
+    const checks = [];
+    const checkNames = [];
     
-    while %s do
-        if %s==1 then
-            local %s=string.byte(%s,%s) or 0
-            local %s=(%s + %s * %s + %s) %% 256
-            local %s=%s ~ %s
-            
-            if %s==0xC4 then
-                local %s=string.byte(%s,%s+1) or 0
-                local %s=string.byte(%s,%s+2) or 0
-                local %s=string.byte(%s,%s+3) or 0
-                local %s=(%s + %s * %s + %s) %% 256
-                %s[%s]=string.char(%s ~ %s)
-                %s=%s+4
-            elseif %s==0x11E then
-                local %s=%s[1] or ""
-                if %s~="" then
-                    local %s=loadstring(%s)
-                    if %s then
-                        task.spawn(%s)
-                        %s=false
-                        break
+    // 30 verificaciones anti-tamper diferentes
+    for (let i = 0; i < 30; i++) {
+        const name = randomName();
+        checkNames.push(name);
+        
+        const checkType = i % 10;
+        let checkCode = '';
+        
+        switch(checkType) {
+            case 0:
+                checkCode = `
+                local function ${name}()
+                    if debug and debug.getinfo then
+                        local info = debug.getinfo(1, "S")
+                        if info and info.what == "C" then
+                            while true do error("DEBUG_DETECTED_" .. ${i}) end
+                        end
                     end
                 end
-                %s=%s+1
-            elseif %s==0x136 then
-                %s=false
-                break
-            elseif %s==0x01 then
-                local %s=string.byte(%s,%s+1) or 0
-                local %s=string.byte(%s,%s+2) or 0
-                local %s=string.byte(%s,%s+3) or 0
-                local %s=(%s + %s * %s + %s) %% 256
-                %s[%s]=%s ~ %s
-                %s=%s+4
-            elseif %s==0x03 then
-                local %s=string.byte(%s,%s+1) or 0
-                local %s=string.byte(%s,%s+2) or 0
-                local %s=string.byte(%s,%s+3) or 0
-                %s[%s]=(%s[%s] or 0) + (%s[%s] or 0)
-                %s=%s+4
-            elseif %s==0x04 then
-                local %s=string.byte(%s,%s+1) or 0
-                local %s=string.byte(%s,%s+2) or 0
-                local %s=string.byte(%s,%s+3) or 0
-                %s[%s]=(%s[%s] or 0) - (%s[%s] or 0)
-                %s=%s+4
-            elseif %s==0x05 then
-                local %s=string.byte(%s,%s+1) or 0
-                local %s=string.byte(%s,%s+2) or 0
-                local %s=string.byte(%s,%s+3) or 0
-                %s[%s]=(%s[%s] or 0) * (%s[%s] or 0)
-                %s=%s+4
-            elseif %s==0x06 then
-                local %s=string.byte(%s,%s+1) or 0
-                local %s=string.byte(%s,%s+2) or 0
-                local %s=string.byte(%s,%s+3) or 0
-                %s[%s]=(%s[%s] or 0) / (%s[%s] or 0)
-                %s=%s+4
-            elseif %s==0x07 then
-                local %s=string.byte(%s,%s+1) or 0
-                local %s=string.byte(%s,%s+2) or 0
-                local %s=string.byte(%s,%s+3) or 0
-                %s[%s]=(%s[%s] or 0) %% (%s[%s] or 0)
-                %s=%s+4
-            elseif %s==0x21 then
-                local %s=string.byte(%s,%s+1) or 0
-                local %s=string.byte(%s,%s+2) or 0
-                local %s=string.byte(%s,%s+3) or 0
-                %s[%s]=bit32.bxor(%s[%s] or 0, %s[%s] or 0)
-                %s=%s+4
-            elseif %s==0x24 then
-                local %s=string.byte(%s,%s+1) or 0
-                local %s=string.byte(%s,%s+2) or 0
-                %s[%s]=not (%s[%s] or false)
-                %s=%s+3
-            elseif %s==0x25 then
-                local %s=string.byte(%s,%s+1) or 0
-                local %s=string.byte(%s,%s+2) or 0
-                local %s=string.byte(%s,%s+3) or 0
-                %s[%s]=(%s[%s] and %s[%s])
-                %s=%s+4
-            elseif %s==0x26 then
-                local %s=string.byte(%s,%s+1) or 0
-                local %s=string.byte(%s,%s+2) or 0
-                local %s=string.byte(%s,%s+3) or 0
-                %s[%s]=(%s[%s] or %s[%s])
-                %s=%s+4
-            elseif %s==0x1F then
-                local %s=string.byte(%s,%s+1) or 0
-                table.insert(%s, %s[%s] or 0)
-                %s=%s+2
-            elseif %s==0x20 then
-                local %s=string.byte(%s,%s+1) or 0
-                %s[%s]=table.remove(%s) or 0
-                %s=%s+2
-            elseif %s==0x0B then
-                local %s=string.byte(%s,%s+1) or 0
-                %s=%s
-            elseif %s==0x0C then
-                local %s=string.byte(%s,%s+1) or 0
-                local %s=%s[%s] or function()end
-                %s()
-                %s=%s+2
-            elseif %s==0x0D then
-                return %s[%s] or 0
-            elseif %s==0x2D then
-                local %s=string.byte(%s,%s+1) or 0
-                local %s=string.byte(%s,%s+2) or 0
-                %s[%s]=#(%s[%s] or {})
-                %s=%s+3
-            elseif %s==0x36 then
-                local %s=string.byte(%s,%s+1) or 0
-                local %s=string.byte(%s,%s+2) or 0
-                local %s=string.byte(%s,%s+3) or 0
-                %s[%s]=(%s[%s]==%s[%s])
-                %s=%s+4
-            elseif %s==0x37 then
-                local %s=string.byte(%s,%s+1) or 0
-                local %s=string.byte(%s,%s+2) or 0
-                local %s=string.byte(%s,%s+3) or 0
-                %s[%s]=(%s[%s]<%s[%s])
-                %s=%s+4
-            elseif %s==0x38 then
-                local %s=string.byte(%s,%s+1) or 0
-                local %s=string.byte(%s,%s+2) or 0
-                local %s=string.byte(%s,%s+3) or 0
-                %s[%s]=(%s[%s]<=%s[%s])
-                %s=%s+4
-            elseif %s==0x39 then
-                local %s=string.byte(%s,%s+1) or 0
-                local %s=string.byte(%s,%s+2) or 0
-                local %s=string.byte(%s,%s+3) or 0
-                %s[%s]=(%s[%s]~=%s[%s])
-                %s=%s+4
-            else
-                %s=%s+1
+                `;
+                break;
+            case 1:
+                checkCode = `
+                local function ${name}()
+                    local t1 = os.clock()
+                    local sum = 0
+                    for _ = 1, 500000 do
+                        sum = sum + 1
+                    end
+                    if os.clock() - t1 > 0.05 then
+                        while true do error("SLOW_EXECUTION_" .. ${i}) end
+                    end
+                end
+                `;
+                break;
+            case 2:
+                checkCode = `
+                local function ${name}()
+                    if type(getfenv) ~= "function" then
+                        while true do error("FENV_MISSING_" .. ${i}) end
+                    end
+                    local env = getfenv()
+                    if not env then
+                        while true do error("ENV_NULL_" .. ${i}) end
+                    end
+                end
+                `;
+                break;
+            case 3:
+                checkCode = `
+                local function ${name}()
+                    if math.abs(-10) ~= 10 then
+                        while true do error("MATH_TAMPER_" .. ${i}) end
+                    end
+                    if string.char(65) ~= "A" then
+                        while true do error("STRING_TAMPER_" .. ${i}) end
+                    end
+                    if type({}) ~= "table" then
+                        while true do error("TABLE_TAMPER_" .. ${i}) end
+                    end
+                end
+                `;
+                break;
+            case 4:
+                checkCode = `
+                local function ${name}()
+                    local hook = debug.sethook(function() end, "l")
+                    debug.sethook()
+                    if hook then
+                        while true do error("HOOK_DETECTED_" .. ${i}) end
+                    end
+                end
+                `;
+                break;
+            case 5:
+                checkCode = `
+                local function ${name}()
+                    local success, err = pcall(function()
+                        return debug.getinfo(1, "S")
+                    end)
+                    if not success then
+                        while true do error("DEBUG_DISABLED_" .. ${i}) end
+                    end
+                end
+                `;
+                break;
+            case 6:
+                checkCode = `
+                local function ${name}()
+                    local env = getfenv()
+                    if env and type(env) == "table" then
+                        local mt = getmetatable(env) or {}
+                        if mt.__metatable ~= nil and mt.__metatable ~= "SECURE" then
+                            while true do error("METATABLE_TAMPER_" .. ${i}) end
+                        end
+                    end
+                end
+                `;
+                break;
+            case 7:
+                checkCode = `
+                local function ${name}()
+                    for k, v in pairs(_G) do
+                        if type(v) == "function" and tostring(v):match("spy") then
+                            while true do error("SPY_DETECTED_" .. ${i}) end
+                        end
+                    end
+                end
+                `;
+                break;
+            case 8:
+                checkCode = `
+                local function ${name}()
+                    local env = getfenv()
+                    if env and type(env) == "table" then
+                        local mt = getmetatable(env)
+                        if mt and mt.__index then
+                            while true do error("METATABLE_INDEX_" .. ${i}) end
+                        end
+                    end
+                end
+                `;
+                break;
+            case 9:
+                checkCode = `
+                local function ${name}()
+                    local coroutines = {}
+                    for k, v in pairs(coroutine) do
+                        if type(v) == "function" then
+                            table.insert(coroutines, k)
+                        end
+                    end
+                    if #coroutines < 5 then
+                        while true do error("COROUTINE_TAMPER_" .. ${i}) end
+                    end
+                end
+                `;
+                break;
+        }
+        
+        checks.push(checkCode);
+    }
+    
+    return {
+        functions: checks.join('\n'),
+        calls: checkNames.map(name => `${name}()`).join('\n    ')
+    };
+}
+
+// ==================== COMPILADOR CON OPCodes ====================
+
+function compileToBytecode(source) {
+    const lines = source.split('\n');
+    const bytecode = [];
+    const constants = [];
+    const variables = {};
+    
+    function getConstIndex(val) {
+        let idx = constants.indexOf(val);
+        if (idx === -1) {
+            constants.push(val);
+            idx = constants.length - 1;
+        }
+        return idx;
+    }
+    
+    function parseExpression(expr) {
+        expr = expr.trim();
+        
+        if (/^[\d.]+$/.test(expr)) {
+            return { type: 'const', value: parseFloat(expr) };
+        }
+        if (/^["'].*["']$/.test(expr)) {
+            const str = expr.slice(1, -1);
+            return { type: 'const', value: str };
+        }
+        if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(expr)) {
+            return { type: 'var', name: expr };
+        }
+        
+        const opMatch = expr.match(/^(.+)\s*([+\-*/%])\s*(.+)$/);
+        if (opMatch) {
+            const left = parseExpression(opMatch[1]);
+            const right = parseExpression(opMatch[3]);
+            return { type: 'op', op: opMatch[2], left, right };
+        }
+        
+        const callMatch = expr.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\((.*)\)$/);
+        if (callMatch) {
+            const funcName = callMatch[1];
+            const args = callMatch[2].split(',').map(a => parseExpression(a.trim()));
+            return { type: 'call', func: funcName, args };
+        }
+        
+        return { type: 'var', name: expr };
+    }
+    
+    for (let line of lines) {
+        line = line.trim();
+        if (line === '' || line.startsWith('--')) continue;
+        
+        // Asignación local
+        const localAssign = line.match(/^local\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.+)$/);
+        if (localAssign) {
+            const varName = localAssign[1];
+            const expr = localAssign[2];
+            const parsed = parseExpression(expr);
+            
+            if (parsed.type === 'const') {
+                const idx = getConstIndex(parsed.value);
+                bytecode.push({ op: 1, args: [idx] });
+                bytecode.push({ op: 3, args: [varName] });
+            } else if (parsed.type === 'var') {
+                bytecode.push({ op: 2, args: [parsed.name] });
+                bytecode.push({ op: 3, args: [varName] });
+            } else if (parsed.type === 'op') {
+                const left = parsed.left;
+                const right = parsed.right;
+                
+                if (left.type === 'const') {
+                    const idx = getConstIndex(left.value);
+                    bytecode.push({ op: 1, args: [idx] });
+                } else if (left.type === 'var') {
+                    bytecode.push({ op: 2, args: [left.name] });
+                }
+                
+                if (right.type === 'const') {
+                    const idx = getConstIndex(right.value);
+                    bytecode.push({ op: 1, args: [idx] });
+                } else if (right.type === 'var') {
+                    bytecode.push({ op: 2, args: [right.name] });
+                }
+                
+                const opMap = {
+                    '+': 6, '-': 7, '*': 8, '/': 9, '%': 10
+                };
+                const opCode = opMap[parsed.op] || 6;
+                bytecode.push({ op: opCode, args: [] });
+                bytecode.push({ op: 3, args: [varName] });
+            } else if (parsed.type === 'call') {
+                for (let arg of parsed.args) {
+                    if (arg.type === 'const') {
+                        const idx = getConstIndex(arg.value);
+                        bytecode.push({ op: 1, args: [idx] });
+                    } else if (arg.type === 'var') {
+                        bytecode.push({ op: 2, args: [arg.name] });
+                    }
+                }
+                bytecode.push({ op: 4, args: [parsed.func, parsed.args.length] });
+                bytecode.push({ op: 3, args: [varName] });
+            }
+            continue;
+        }
+        
+        // Llamada a función
+        const callMatch = line.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\((.*)\)$/);
+        if (callMatch) {
+            const funcName = callMatch[1];
+            const args = callMatch[2].split(',').map(a => parseExpression(a.trim()));
+            
+            for (let arg of args) {
+                if (arg.type === 'const') {
+                    const idx = getConstIndex(arg.value);
+                    bytecode.push({ op: 1, args: [idx] });
+                } else if (arg.type === 'var') {
+                    bytecode.push({ op: 2, args: [arg.name] });
+                }
+            }
+            bytecode.push({ op: 4, args: [funcName, args.length] });
+            continue;
+        }
+        
+        // Retorno
+        const returnMatch = line.match(/^return\s*(.*)$/);
+        if (returnMatch) {
+            if (returnMatch[1]) {
+                const parsed = parseExpression(returnMatch[1]);
+                if (parsed.type === 'const') {
+                    const idx = getConstIndex(parsed.value);
+                    bytecode.push({ op: 1, args: [idx] });
+                } else if (parsed.type === 'var') {
+                    bytecode.push({ op: 2, args: [parsed.name] });
+                }
+            }
+            bytecode.push({ op: 5, args: [] });
+        }
+    }
+    
+    if (bytecode.length === 0 || bytecode[bytecode.length - 1].op !== 5) {
+        bytecode.push({ op: 5, args: [] });
+    }
+    
+    return { bytecode, constants };
+}
+
+// ==================== GENERADOR DE VM CON ANTI-TAMPER ====================
+
+function generateVM(bytecode, constants) {
+    const vmName = randomName();
+    const pcVar = randomName();
+    const stackVar = randomName();
+    const envVar = randomName();
+    const constVar = randomName();
+    const resultVar = randomName();
+    const antiCheckVar = randomName();
+    const iterationVar = randomName();
+    
+    // 20 funciones de opcode
+    const opFuncs = [];
+    for (let i = 0; i < 20; i++) {
+        opFuncs.push(randomName());
+    }
+    
+    // Constantes ofuscadas
+    let constTable = '{\n';
+    for (let i = 0; i < constants.length; i++) {
+        const val = constants[i];
+        if (typeof val === 'string') {
+            constTable += `  [${obfuscateNumber(i)}] = ${obfuscateString(val)},\n`;
+        } else if (typeof val === 'number') {
+            constTable += `  [${obfuscateNumber(i)}] = ${obfuscateNumber(val)},\n`;
+        }
+    }
+    constTable += '}';
+    
+    // Bytecode ofuscado
+    let bcTable = '{\n';
+    for (let instr of bytecode) {
+        const op = obfuscateNumber(instr.op);
+        const args = instr.args.map(a => {
+            if (typeof a === 'string') return `"${a}"`;
+            return String(a);
+        }).join(', ');
+        bcTable += `  {op = ${op}, args = {${args}}},\n`;
+    }
+    bcTable += '}';
+    
+    // Implementaciones de opcodes con anti-tamper
+    const opImpls = [
+        `function ${opFuncs[0]}(args) end`,
+        `function ${opFuncs[1]}(args) local idx=args[1] local val=${constVar}[idx] table.insert(${stackVar}, val) end`,
+        `function ${opFuncs[2]}(args) local name=args[1] local val=${envVar}[name] table.insert(${stackVar}, val) end`,
+        `function ${opFuncs[3]}(args) local name=args[1] local val=table.remove(${stackVar}) ${envVar}[name]=val end`,
+        `function ${opFuncs[4]}(args) local name=args[1] local numArgs=args[2] or 0 local callArgs={} for i=1,numArgs do callArgs[i]=table.remove(${stackVar}) end local f=${envVar}[name] if f then table.insert(${stackVar}, f(table.unpack(callArgs))) end end`,
+        `function ${opFuncs[5]}(args) return table.remove(${stackVar}) end`,
+        `function ${opFuncs[6]}(args) local a=table.remove(${stackVar}) local b=table.remove(${stackVar}) table.insert(${stackVar}, a+b) end`,
+        `function ${opFuncs[7]}(args) local a=table.remove(${stackVar}) local b=table.remove(${stackVar}) table.insert(${stackVar}, a-b) end`,
+        `function ${opFuncs[8]}(args) local a=table.remove(${stackVar}) local b=table.remove(${stackVar}) table.insert(${stackVar}, a*b) end`,
+        `function ${opFuncs[9]}(args) local a=table.remove(${stackVar}) local b=table.remove(${stackVar}) table.insert(${stackVar}, a/b) end`,
+        `function ${opFuncs[10]}(args) local a=table.remove(${stackVar}) local b=table.remove(${stackVar}) table.insert(${stackVar}, a%b) end`,
+        `function ${opFuncs[11]}(args) end`,
+        `function ${opFuncs[12]}(args) end`,
+        `function ${opFuncs[13]}(args) end`,
+        `function ${opFuncs[14]}(args) end`,
+        `function ${opFuncs[15]}(args) end`,
+        `function ${opFuncs[16]}(args) end`,
+        `function ${opFuncs[17]}(args) end`,
+        `function ${opFuncs[18]}(args) end`,
+        `function ${opFuncs[19]}(args) end`
+    ];
+    
+    // Tabla de dispatch
+    let opTable = '{\n';
+    for (let i = 0; i < opFuncs.length; i++) {
+        opTable += `  [${obfuscateNumber(i)}] = ${opFuncs[i]},\n`;
+    }
+    opTable += '}';
+    
+    // VM completa con anti-tamper integrado
+    let vm = `
+    -- ============================================
+    -- LAURA VM v4.0 - CON ANTI-TAMPER INTEGRADO
+    -- ============================================
+    
+    -- Variables de la VM
+    local ${vmName} = {}
+    local ${pcVar} = 1
+    local ${stackVar} = {}
+    local ${envVar} = getfenv() or _G
+    local ${constVar} = ${constTable}
+    local ${iterationVar} = 0
+    local ${antiCheckVar} = true
+    
+    -- Bytecode
+    local bytecode = ${bcTable}
+    
+    -- Funciones de opcode
+    ${opImpls.join('\n    ')}
+    
+    -- Tabla de dispatch
+    local opTable = ${opTable}
+    
+    -- Anti-tamper integrado en la VM
+    local function ${randomName()}()
+        -- Verificar debug
+        if debug and debug.getinfo then
+            local info = debug.getinfo(1, "S")
+            if info and info.what == "C" then
+                while true do error("ANTI_TAMPER: DEBUG") end
             end
         end
-        if %s > #%s then
-            %s=false
-            break
+        
+        -- Verificar entorno
+        if type(getfenv) ~= "function" then
+            while true do error("ANTI_TAMPER: FENV") end
         end
-        if %s>2000 then
-            %s=false
-            break
+        
+        -- Verificar funciones básicas
+        if math.abs(-10) ~= 10 then
+            while true do error("ANTI_TAMPER: MATH") end
         end
-        %s=%s+1
-    end
-end
-
-%s()
-]],
-    bytecodeData, bytecodeStr,
-    vmState,
-    vmStack,
-    vmRegs,
-    vmPC,
-    vmRunning,
-    generateCustomName(),
-    generateCustomName(),
-    generateCustomName(), seed1,
-    generateCustomName(), seed2,
-    generateCustomName(), seed3,
-    generateCustomName(), generateCustomName(), generateCustomName(), generateCustomName(),
-    vmRunning,
-    vmState,
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), generateCustomName(), generateCustomName(), vmPC, generateCustomName(),
-    generateCustomName(), generateCustomName(), generateCustomName(),
-    generateCustomName(),
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), generateCustomName(), generateCustomName(), vmPC, generateCustomName(),
-    vmRegs, generateCustomName(), generateCustomName(), generateCustomName(),
-    vmPC, vmPC,
-    generateCustomName(),
-    generateCustomName(), vmRegs,
-    generateCustomName(),
-    generateCustomName(),
-    vmRunning,
-    vmPC, vmPC,
-    generateCustomName(),
-    vmRunning,
-    generateCustomName(),
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), generateCustomName(), generateCustomName(), vmPC, generateCustomName(),
-    vmRegs, generateCustomName(), generateCustomName(), generateCustomName(),
-    vmPC, vmPC,
-    generateCustomName(),
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    vmRegs, generateCustomName(), vmRegs, generateCustomName(), vmRegs, generateCustomName(),
-    vmPC, vmPC,
-    generateCustomName(),
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    vmRegs, generateCustomName(), vmRegs, generateCustomName(), vmRegs, generateCustomName(),
-    vmPC, vmPC,
-    generateCustomName(),
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    vmRegs, generateCustomName(), vmRegs, generateCustomName(), vmRegs, generateCustomName(),
-    vmPC, vmPC,
-    generateCustomName(),
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    vmRegs, generateCustomName(), vmRegs, generateCustomName(), vmRegs, generateCustomName(),
-    vmPC, vmPC,
-    generateCustomName(),
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    vmRegs, generateCustomName(), vmRegs, generateCustomName(), vmRegs, generateCustomName(),
-    vmPC, vmPC,
-    generateCustomName(),
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    vmRegs, generateCustomName(), vmRegs, generateCustomName(),
-    vmPC, vmPC,
-    generateCustomName(),
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    vmRegs, generateCustomName(), vmRegs, generateCustomName(),
-    vmPC, vmPC,
-    generateCustomName(),
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    vmRegs, generateCustomName(), vmRegs, generateCustomName(),
-    vmPC, vmPC,
-    generateCustomName(),
-    generateCustomName(), bytecodeData, vmPC,
-    vmRegs, generateCustomName(),
-    vmPC, vmPC,
-    generateCustomName(),
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    vmRegs, generateCustomName(),
-    vmPC, vmPC,
-    generateCustomName(),
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    vmRegs, generateCustomName(),
-    vmPC, vmPC,
-    generateCustomName(),
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    vmRegs, generateCustomName(),
-    vmPC, vmPC,
-    generateCustomName(),
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    generateCustomName(), bytecodeData, vmPC,
-    vmRegs, generateCustomName(), vmRegs, generateCustomName(), vmRegs, generateCustomName(),
-    vmPC, vmPC,
-    generateCustomName()
-    
-    return vm
-end
-
--- ==================== FUNCIÓN PRINCIPAL ====================
-local function obfuscate(sourceCode)
-    if not sourceCode or sourceCode == "" then
-        return "-- Error: No Source"
+        
+        if string.char(65) ~= "A" then
+            while true do error("ANTI_TAMPER: STRING") end
+        end
+        
+        if type({}) ~= "table" then
+            while true do error("ANTI_TAMPER: TABLE") end
+        end
+        
+        -- Verificar hooks
+        local hook = debug.sethook(function() end, "l")
+        debug.sethook()
+        if hook then
+            while true do error("ANTI_TAMPER: HOOK") end
+        end
+        
+        return true
     end
     
-    math.randomseed(os.time())
+    -- Verificar integridad antes de ejecutar
+    ${randomName()}()
     
-    local protections = getProtections()
-    
-    local payloadToProtect = ""
-    local isLoadstringRegex = 'loadstring%s*%(%s*game%s*:%s*HttpGet%s*%(%s*["\']([^"\']+)["\']%s*%)%s*%)%s*%(%s*%)'
-    local match = string.match(sourceCode, isLoadstringRegex)
-    
-    if match then
-        payloadToProtect = match
-    else
-        payloadToProtect = detectAndApplyMappings(sourceCode)
+    function ${vmName}:execute()
+        local pc = 1
+        local iterations = 0
+        
+        while true do
+            iterations = iterations + 1
+            if iterations > ${MAX_VM_ITERATIONS} then
+                error("VM_LOOP_LIMIT")
+            end
+            
+            -- Anti-tamper cada 50 iteraciones
+            if iterations % 50 == 0 then
+                ${randomName()}()
+            end
+            
+            local instr = bytecode[pc]
+            if not instr then break end
+            
+            local op = instr.op
+            local args = instr.args
+            
+            -- Verificar opcode
+            local func = opTable[op]
+            if func then
+                func(args)
+            else
+                error("INVALID_OPCODE: " .. tostring(op))
+            end
+            
+            pc = pc + 1
+            if pc > #bytecode then break end
+        end
+        
+        return ${stackVar}[#${stackVar}]
     end
     
-    local vm = buildBytecodeVM(payloadToProtect)
-    local junk = generateJunk(250)
+    -- Ejecutar con protección
+    local success, err = pcall(function()
+        local ${resultVar} = ${vmName}:execute()
+        if ${resultVar} ~= nil then
+            return ${resultVar}
+        end
+    end)
     
-    local finalCode = string.format([[
-%s
-%s
-%s
-%s
-%s
-]], HEADER, junk, protections, ANTI_TAMPER, vm)
+    if not success then
+        error("VM_ERROR: " .. tostring(err))
+    end
+    `;
     
-    finalCode = string.gsub(finalCode, "%s+", " ")
-    finalCode = string.gsub(finalCode, "^%s+", "")
-    
-    return finalCode
-end
-
--- ==================== EXPORTAR ====================
-return {
-    obfuscate = obfuscate
+    return vm;
 }
+
+// ==================== OFUSCADOR PRINCIPAL ====================
+
+function obfuscate(sourceCode) {
+    if (!sourceCode || sourceCode.trim() === '') {
+        return '-- Error: No source code provided';
+    }
+    
+    console.error('🔒 Iniciando ofuscación con Laura VM v4.0...');
+    console.error(`📊 Código original: ${sourceCode.length} bytes`);
+    
+    // 1. Generar anti-tamper completo
+    console.error('🛡️ Generando anti-tamper...');
+    const antiTamper = generateFullAntiTamper();
+    
+    // 2. Compilar a bytecode
+    console.error('⚙️ Compilando a bytecode...');
+    const { bytecode, constants } = compileToBytecode(sourceCode);
+    console.error(`📊 Bytecode: ${bytecode.length} instrucciones, ${constants.length} constantes`);
+    
+    // 3. Generar VM con anti-tamper
+    console.error('🏗️ Generando VM con anti-tamper...');
+    let vm = generateVM(bytecode, constants);
+    
+    // 4. Generar código basura
+    console.error('🗑️ Generando código basura...');
+    let junk1 = generateJunk(JUNK_LINES);
+    let junk2 = generateJunk(JUNK_LINES);
+    let junk3 = generateJunk(JUNK_LINES);
+    let junk4 = generateJunk(JUNK_LINES);
+    let junk5 = generateJunk(JUNK_LINES);
+    
+    // 5. Montar código final
+    console.error('📦 Montando código final...');
+    
+    let finalCode = HEADER + '\n\n';
+    
+    // Capa 1: Anti-tamper
+    finalCode += `-- === ANTI-TAMPER COMPLETO ===\n`;
+    finalCode += antiTamper.functions + '\n';
+    finalCode += `-- Ejecutar verificaciones\n`;
+    finalCode += antiTamper.calls + '\n';
+    finalCode += junk1 + '\n';
+    
+    // Capa 2: Configuración
+    finalCode += `-- === CONFIGURACIÓN ===\n`;
+    finalCode += `local ${randomName()} = {} \n`;
+    finalCode += junk2 + '\n';
+    
+    // Capa 3: VM principal
+    finalCode += `-- === VM CON OPCodes ===\n`;
+    finalCode += vm + '\n';
+    finalCode += junk3 + '\n';
+    
+    // Capa 4: Verificaciones finales
+    finalCode += `-- === VERIFICACIONES FINALES ===\n`;
+    finalCode += `
+    -- Verificación de integridad final
+    local ${randomName()} = function()
+        local checks = 0
+        for k, v in pairs(_G) do
+            if type(v) == "function" and tostring(v):match("check") then
+                checks = checks + 1
+            end
+        end
+        return checks > 5
+    end
+    
+    if not ${randomName()}() then
+        error("FINAL_INTEGRITY_FAIL")
+    end
+    `;
+    finalCode += junk4 + '\n';
+    finalCode += junk5 + '\n';
+    
+    // Capa 5: Cierre
+    finalCode += `-- === CIERRE ===\n`;
+    finalCode += `
+    -- Limpieza final
+    local ${randomName()} = {}
+    for ${randomName()}, ${randomName()} in pairs(_G) do
+        if type(${randomName()}) == "function" and tostring(${randomName()}):match("VM") then
+            ${randomName()}[${randomName()}] = nil
+        end
+    end
+    
+    print("✅ Laura VM ejecutada correctamente")
+    `;
+    
+    // Limpiar espacios
+    finalCode = finalCode.replace(/\n\s*\n\s*\n/g, '\n\n');
+    
+    console.error(`✅ Ofuscación completada! Tamaño: ${finalCode.length} bytes`);
+    
+    return finalCode;
+}
+
+// ==================== EJECUCIÓN ====================
+
+if (require.main === module) {
+    const args = process.argv.slice(2);
+    let input = '';
+    
+    if (args.length > 0) {
+        try {
+            input = fs.readFileSync(args[0], 'utf-8');
+        } catch (e) {
+            console.error('❌ Error leyendo archivo:', e.message);
+            process.exit(1);
+        }
+    } else {
+        try {
+            input = fs.readFileSync(0, 'utf-8');
+        } catch (e) {
+            console.error('❌ Error leyendo stdin:', e.message);
+            process.exit(1);
+        }
+    }
+    
+    if (!input || input.trim() === '') {
+        console.error('❌ Error: No hay código para ofuscar');
+        process.exit(1);
+    }
+    
+    const result = obfuscate(input);
+    console.log(result);
+}
+
+module.exports = { obfuscate };
