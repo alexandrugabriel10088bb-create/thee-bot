@@ -30,8 +30,14 @@ app.post('/api/obfuscate', (req, res) => {
     }
 });
 
-function startServer(port = process.env.API_PORT || 3000) {
-    app.listen(port, () => {
+// Health check endpoint (useful for Railway)
+app.get('/health', (req, res) => {
+    res.send('OK');
+});
+
+function startServer() {
+    const port = process.env.PORT || 3000;
+    app.listen(port, '0.0.0.0', () => {
         console.log(`API server running on port ${port}`);
     });
 }
