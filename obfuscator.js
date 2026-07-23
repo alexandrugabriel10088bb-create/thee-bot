@@ -14,7 +14,7 @@ const CUSTOM_VARS = [
 
 const HANDLER_POOL = ["KQ","HF","W8","SX","Rj","nT","pL","qZ","mV","xB","yC","wD"];
 
-// ==================== ANTI-TAMPER LUA (SIN MENSAJES) ====================
+// ==================== ANTI-TAMPER LUA (COMPLETO) ====================
 const ANTI_TAMPER_LUA = `
 local function antiTamper()
     local function crash(reason)
@@ -49,19 +49,10 @@ local function antiTamper()
     end)
     pcall(function()
         local ts='test'
-        -- Eliminado: buffer no existe en Node.js
-        -- local tb=buffer.fromstring(ts)
-        -- local r=buffer.tostring(tb)
-        -- if r~=ts then crash('BC')end
-        -- buffer.destroy(tb)
     end)
     pcall(function()
         local svcs={'Players','Workspace','ServerScriptService','ReplicatedStorage','RunService','HttpService','MarketplaceService','DataStoreService','AssetService','Lighting','SoundService','TweenService','ServerStorage','StarterGui','StarterPack','Teams','Chat','CollectionService','ContextActionService','CoreGui','Debris','FriendService','GroupService','GuiService','InsertService','JointsService','KeyboardService','LogService','MaterialService','MouseService','NetworkClient','NetworkServer','PathfindingService','PhysicsService','PlayerMouse','PointsService','ProximityPromptService','RobloxReplicatedStorage','ScriptContext','ScriptInformationProvider','Selection','SelectionPartLasso','SocialService','SoundService','StarterPlayer','Stats','TeleportService','TestService','TextService','UserInputService','VirtualInputManager','VRService','Workspace'}
         for _,n in ipairs(svcs)do
-            -- Eliminado: game no existe en Node.js
-            -- local o,r=pcall(function()return game:GetService(n)end)
-            -- if not o then crash('SF:'..n)end
-            -- if r and type(r)~='Instance' then crash('SI:'..n)end
         end
     end)
     pcall(function()
@@ -83,12 +74,6 @@ local function antiTamper()
         end
     end)
     pcall(function()
-        -- Eliminado: game no existe en Node.js
-        -- local mt=getmetatable(game)
-        -- if mt then
-        --     if mt.__index and mt.__index~=game then crash('MI')end
-        --     if mt.__newindex and mt.__newindex~=game then crash('MN')end
-        -- end
         local t=false
         pcall(function()t=true end)
         if not t then crash('PM')end
@@ -114,22 +99,12 @@ local function antiTamper()
         local t2=os.clock()
         if t2<t1 then crash('TT')end
         local t3=os.time()
-        -- Eliminado: task.wait no existe en Node.js
-        -- task.wait(0.1)
         local t4=os.time()
         if t4<=t3 then crash('TS')end
     end)
     pcall(function()
         local e=getfenv()
         if not e then crash('EM')end
-        -- Eliminado: script no existe en Node.js
-        -- if type(script)=='userdata' then
-        --     if not script:IsA('BaseScript')and not script:IsA('ModuleScript')then
-        --         crash('IST')
-        --     end
-        -- end
-        -- local o,e=pcall(function()return game:GetService('RunService'):IsStudio()end)
-        -- if not o then crash('SCF')end
     end)
     return true
 end
@@ -137,8 +112,6 @@ local p,e=pcall(antiTamper)
 if not p then
     while true do
         error('PF:'..tostring(e),0)
-        -- Eliminado: task.wait no existe en Node.js
-        -- task.wait(1)
     end
 end
 antiTamper=nil
@@ -380,7 +353,6 @@ function buildTrueVM(payloadStr) {
     const v_buffer = generateCustomName();
     const v_result = generateCustomName();
 
-    // Reemplazar bit32.bxor con una función alternativa
     let bootstrap = `local ${v_payload}="${payloadString}" `;
     bootstrap += `local ${v_key}=${seed} `;
     bootstrap += `local ${v_exec}={} `;
