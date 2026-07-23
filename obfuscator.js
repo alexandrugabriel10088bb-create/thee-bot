@@ -1,248 +1,36 @@
 // ==================== HEADER ====================
-const HEADER = `--[[ Protected by Custom VM Obfuscator ]]`;
+const HEADER = `--[[ This code is protected by banana aposticator ]]`;
 
-// ==================== VARIABLES PERSONALIZADAS (RANDOM) ====================
+// ==================== VARIABLES ====================
 const CUSTOM_VARS = [
-    "etr", "tr", "etr_", "_etr", "tr_", "_tr", "etr1", "tr1", "etr2", "tr2",
-    "etrx", "trx", "ETR", "TR", "etr_data", "tr_data", "etr_temp", "tr_temp",
-    "data", "temp", "result", "value", "index", "count", "total", "amount",
-    "position", "status", "flags", "config", "cache", "buffer", "stream",
-    "packet", "frame", "token", "session", "client", "server", "node"
+    "etr", "tr", "x", "y", "z", "a", "b", "c", "d", "e", "f", "g", "h",
+    "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v",
+    "w", "x1", "y1", "z1", "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
+    "i1", "j1", "k1", "l1", "m1", "n1", "o1", "p1", "q1", "r1", "s1", "t1"
 ];
 
-// ==================== OPCODES PERSONALIZADOS ====================
-const OPCODES = {
-    NOP: 0x00,
-    LOAD: 0x01,
-    STORE: 0x02,
-    ADD: 0x03,
-    SUB: 0x04,
-    MUL: 0x05,
-    DIV: 0x06,
-    MOD: 0x07,
-    POW: 0x08,
-    CONCAT: 0x09,
-    CMP_EQ: 0x0A,
-    CMP_NE: 0x0B,
-    CMP_LT: 0x0C,
-    CMP_GT: 0x0D,
-    CMP_LE: 0x0E,
-    CMP_GE: 0x0F,
-    JMP: 0x10,
-    JMP_IF: 0x11,
-    JMP_IF_NOT: 0x12,
-    CALL: 0x13,
-    RETURN: 0x14,
-    NEW_TABLE: 0x15,
-    SET_TABLE: 0x16,
-    GET_TABLE: 0x17,
-    NEW_FUNCTION: 0x18,
-    CLOSURE: 0x19,
-    VARARG: 0x1A,
-    GET_UPVAL: 0x1B,
-    SET_UPVAL: 0x1C,
-    GET_GLOBAL: 0x1D,
-    SET_GLOBAL: 0x1E,
-    GET_METATABLE: 0x1F,
-    SET_METATABLE: 0x20,
-    TYPE_CHECK: 0x21,
-    TOSTRING: 0x22,
-    TONUMBER: 0x23,
-    LENGTH: 0x24,
-    NEXT: 0x25,
-    PAIRS: 0x26,
-    IPAIRS: 0x27,
-    SELECT: 0x28,
-    ASSERT: 0x29,
-    ERROR: 0x2A,
-    PCALL: 0x2B,
-    XOR: 0x2C,
-    SHL: 0x2D,
-    SHR: 0x2E,
-    NOT: 0x2F,
-    AND: 0x30,
-    OR: 0x31,
-    BAND: 0x32,
-    BOR: 0x33,
-    BNOT: 0x34,
-    GET_ENV: 0x35,
-    SET_ENV: 0x36,
-    LOAD_STRING: 0x37,
-    LOAD_NUMBER: 0x38,
-    LOAD_BOOLEAN: 0x39,
-    LOAD_NIL: 0x3A,
-    DUP: 0x3B,
-    SWAP: 0x3C,
-    ROT: 0x3D,
-    PUSH: 0x3E,
-    POP: 0x3F,
-    // OPCODES PERSONALIZADOS
-    DECRYPT_STRING: 0xC4,  // 196 - load decrypted string into register
-    COMPILE_LOAD: 0x11E,   // 286 - get string from register and compile
-    STOP_VM: 0x136         // 310 - stop VM
+// ==================== BYTECODE OPCODES ====================
+const BYTECODE = {
+    OP_LOAD: 0x01, OP_STORE: 0x02, OP_ADD: 0x03, OP_SUB: 0x04,
+    OP_MUL: 0x05, OP_DIV: 0x06, OP_MOD: 0x07, OP_POW: 0x08,
+    OP_CONCAT: 0x09, OP_CMP: 0x0A, OP_JMP: 0x0B, OP_CALL: 0x0C,
+    OP_RET: 0x0D, OP_TABLE: 0x0E, OP_GET: 0x0F, OP_SET: 0x10,
+    OP_FUNC: 0x11, OP_CLOSE: 0x12, OP_VAR: 0x13, OP_UPVAL: 0x14,
+    OP_GLOBAL: 0x15, OP_META: 0x16, OP_TYPE: 0x17, OP_STR: 0x18,
+    OP_NUM: 0x19, OP_BOOL: 0x1A, OP_NIL: 0x1B, OP_DUP: 0x1C,
+    OP_SWAP: 0x1D, OP_ROT: 0x1E, OP_PUSH: 0x1F, OP_POP: 0x20,
+    OP_XOR: 0x21, OP_SHL: 0x22, OP_SHR: 0x23, OP_NOT: 0x24,
+    OP_AND: 0x25, OP_OR: 0x26, OP_BAND: 0x27, OP_BOR: 0x28,
+    OP_BNOT: 0x29, OP_ENV: 0x2A, OP_DEC: 0xC4, OP_COMP: 0x11E,
+    OP_STOP: 0x136
 };
 
 // ==================== HANDLER POOL ====================
 const HANDLER_POOL = ["KQ","HF","W8","SX","Rj","nT","pL","qZ","mV","xB","yC","wD"];
 
-// ==================== ANTI-TAMPER COMPLETO ====================
+// ==================== ANTI-TAMPER ORIGINAL COMPLETO ====================
 const ANTI_TAMPER = `
-local function etr_protect()
-    local function etr_check_env()
-        if not _G then error("ENV_ERROR") end
-        local funcs = {"pcall","xpcall","error","assert","type","rawget","rawset"}
-        for _,f in ipairs(funcs) do
-            if type(_G[f]) ~= "function" then error("FUNC_ERROR:"..f) end
-        end
-        if type(game) ~= "userdata" then error("GAME_ERROR") end
-        return true
-    end
-    
-    local function etr_anti_debug()
-        if debug then
-            local d_funcs = {"getinfo","getupvalue","setupvalue","getlocal","setlocal",
-                "getmetatable","setmetatable","getregistry","getfenv","setfenv"}
-            for _,f in ipairs(d_funcs) do
-                pcall(function() debug[f] = nil end)
-            end
-            if debug.getinfo then error("DEBUG_ACTIVE") end
-        end
-        if debug and debug.sethook then
-            local hook = false
-            debug.sethook(function() hook = true end, "l", 1)
-            debug.sethook()
-            if hook then error("HOOK_DETECTED") end
-        end
-        return true
-    end
-    
-    local function etr_protect_constants()
-        local protected_constants = {}
-        local function protect_value(val)
-            if type(val) == "string" then
-                local encoded = ""
-                for i = 1, #val do
-                    encoded = encoded .. string.char(string.byte(val, i) + 1)
-                end
-                return encoded
-            elseif type(val) == "number" then
-                return val + 1
-            elseif type(val) == "boolean" then
-                return not val
-            else
-                return val
-            end
-        end
-        local function restore_value(val, orig_type)
-            if orig_type == "string" then
-                local decoded = ""
-                for i = 1, #val do
-                    decoded = decoded .. string.char(string.byte(val, i) - 1)
-                end
-                return decoded
-            elseif orig_type == "number" then
-                return val - 1
-            elseif orig_type == "boolean" then
-                return not val
-            else
-                return val
-            end
-        end
-        return protect_value, restore_value
-    end
-    
-    local function etr_protect_memory()
-        local protected = {}
-        local function protect_table(t, name)
-            if type(t) ~= "table" then return end
-            local meta = getmetatable(t) or {}
-            meta.__index = function(tbl, k)
-                if protected[tbl] and protected[tbl][k] then
-                    return protected[tbl][k]
-                end
-                return rawget(tbl, k)
-            end
-            meta.__newindex = function(tbl, k, v)
-                if protected[tbl] and protected[tbl][k] then
-                    error("PROTECTED:"..name)
-                end
-                rawset(tbl, k, v)
-            end
-            meta.__metatable = "PROTECTED"
-            setmetatable(t, meta)
-        end
-        local tables = {_G, game, workspace, script}
-        for _,t in ipairs(tables) do
-            if type(t) == "table" then protect_table(t, "critical") end
-        end
-        return true
-    end
-    
-    local function etr_check_time()
-        local start = os.time()
-        local count = 0
-        for i = 1, 100000 do count = count + 1 end
-        if os.time() < start then error("TIME_ERROR") end
-        return true
-    end
-    
-    local function etr_check_integrity()
-        local check_funcs = {"print","warn","error","type","tostring","tonumber"}
-        for _,f in ipairs(check_funcs) do
-            if type(_G[f]) ~= "function" then error("FUNC_MISS:"..f) end
-        end
-        if string.lower("TEST") ~= "test" then error("STRING_ERROR") end
-        if math.floor(123.456) ~= 123 then error("MATH_ERROR") end
-        return true
-    end
-    
-    local function etr_guardian()
-        local function guardian_thread()
-            local counter = 0
-            while true do
-                counter = counter + 1
-                if counter % 100 == 0 then
-                    if type(_G) ~= "table" then error("G_MODIFIED") end
-                    if type(game) ~= "userdata" then error("GAME_REMOVED") end
-                    if debug and debug.getinfo then error("DEBUG_REACTIVATED") end
-                end
-                local pause = os.clock()
-                while os.clock() - pause < 0.001 do end
-            end
-        end
-        local thread = coroutine.create(guardian_thread)
-        local success, err = coroutine.resume(thread)
-        if not success then error("GUARDIAN_FAIL:"..tostring(err)) end
-        return thread
-    end
-    
-    local function etr_execute()
-        local checks = {
-            etr_check_env,
-            etr_anti_debug,
-            etr_protect_memory,
-            etr_check_time,
-            etr_check_integrity
-        }
-        for _,check in ipairs(checks) do
-            local success, err = pcall(check)
-            if not success then error("CHECK_FAIL:"..tostring(err)) end
-        end
-        local guardian = etr_guardian()
-        local protect, restore = etr_protect_constants()
-        return true, "OK", protect, restore
-    end
-    
-    local success, msg, protect_fn, restore_fn = pcall(etr_execute)
-    if not success then
-        while true do
-            error("ANTI_TAMPER:"..tostring(msg), 0)
-        end
-    end
-    return protect_fn, restore_fn
-end
-
-local etr_protect, etr_restore = pcall(etr_protect)
+local function f()local function g()local h={}local function i(t)if h[t]then return end h[t]=true if type(t)~="table"then return end for k,v in pairs(t)do if type(v)=="table"and not h[v]then i(v)end end table.freeze(t)end pcall(function()i(_G)end)local j={"getinfo","getupvalue","setupvalue","getlocal","setlocal","getmetatable","setmetatable","getregistry","getfenv","setfenv","getconstants","getconstant","getprotos","getuservalue","setuservalue"}for _,k in ipairs(j)do pcall(function()debug[k]=nil end)end pcall(function()getfenv=nil setfenv=nil loadstring=nil load=nil end)local l={}setmetatable(l,{__index=function(t,k)if k=="_G"or k=="getfenv"or k=="setfenv"then return nil end return rawget(t,k)end,__newindex=function(t,k,v)rawset(t,k,v)end,__metatable="SECURE"})setfenv(1,l)end local function m()local function n(r)while true do local s={}for i=1,10 do local t=debug.getinfo(i,"S")if t then table.insert(s,t.short_src or"?")end end error("TAMPER:"..r.."|"..table.concat(s,"->"),0)end end pcall(function()local u=getmetatable(_G)or{}if u.__index or u.__newindex then if u.__index then local v=false for k,_ in pairs(_G)do if k=="env"or k=="logger"or k=="spy"then v=true break end end if v then n("ENV_LOGGER")end end end local w={}local x,y=pcall(function()setmetatable(w,{})getmetatable(w)end)if not x then n("METATABLE")end local z={}for k,_ in pairs(_G)do z[k]=true end if #z>1000 then n("ENV_OVERFLOW")end end)pcall(function()local A=pcall(function()return debug.getinfo(1,"S")end)if not A then n("DEBUG_DISABLED")end local B=false local C=function()B=true end debug.sethook(C,"l")debug.sethook()if B then n("HOOK")end local D,E=pcall(function()debug.getinfo(999999,"S")end)if E and string.find(E,"invalid level")then n("BREAKPOINT")end end)pcall(function()local F="test"local G=buffer.fromstring(F)local H=buffer.tostring(G)if H~=F then n("MEMORY")end local I=buffer.create(4)buffer.writeu8(I,0,255)if buffer.readu8(I,0)~=255 then n("BUFFER")end local J,K=pcall(function()local L=buffer.create(1024)for i=1,1024 do buffer.writeu8(L,i-1,i%256)end end)if not K then n("MEMORY_ACCESS")end end)pcall(function()local M={"Players","Workspace","ServerScriptService","ReplicatedStorage","RunService","HttpService","MarketplaceService","DataStoreService"}for _,N in ipairs(M)do local O,P=pcall(function()return game:GetService(N)end)if not O then n("SERVICE:"..N)end if P and type(P)~="Instance"then n("SERVICE_INVALID:"..N)end end local Q,R=pcall(function()local S=Instance.new("Part")S.Name="Guard" S.Parent=workspace S:Destroy()end)if R then n("INSTANCE")end local T,U=pcall(function()return game:GetService("AssetService"):CreateEditableMesh()end)if T and U then local V=U:AddVertex(Vector3.new(0,0,0))if not V then n("MESH")end U:Destroy()end end)pcall(function()local W=coroutine.create(function()coroutine.yield(1)end)local X,Y=coroutine.resume(W)if not X or Y~=1 then n("COROUTINE")end local Z=0 for _ in pairs(coroutine)do Z=Z+1 end if Z<1 then n("THREAD")end end)pcall(function()local _=os.clock()local aa=0 for i=1,100000 do aa=aa+i end local ab=os.clock()-_ if ab>0.1 then n("PERFORMANCE")end local ac=os.time()local ad=os.time()if ad<ac then n("TIME")end end)pcall(function()local ae={"pcall","xpcall","error","assert","type","rawget","rawset","next","pairs","ipairs","select","tonumber","tostring"}for _,af in ipairs(ae)do if type(_G[af])~="function"then n("FUNC_MISS:"..af)end end end)return true end local function ag()local function ah(ai)while true do error("LOGGER:"..ai,0)end end pcall(function()local aj={"logger","log","debug","spy","monitor","hook","inject","dump","trace","profile","benchmark","performance","record","capture","snapshot","clone","copy"}for _,ak in ipairs(aj)do if _G[ak]~=nil then ah("KEY:"..ak)end end local al=getmetatable(_G)or{}if al.__index and type(al.__index)=="function"then local am=pcall(function()al.__index(_G,"test_key")end)if am then ah("METATABLE_INDEX")end end end)pcall(function()local an={}local function ao()end local ap=pcall(function()return debug.getinfo(ao,"S")end)if ap then ah("FUNCTION_CAPTURE")end end)pcall(function()local aq={}local ar,as=pcall(function()for k,v in pairs(_G)do aq[k]=true end end)if ar and #aq>0 then local at=getmetatable(_G)or{}if at.__newindex then local au="__guard__"local av=_G[au]_G[au]="test"if _G[au]~="test"then ah("ENV_CHANGE")end _G[au]=av end end end)pcall(function()local aw={"io","os","print","warn","error"}for _,ax in ipairs(aw)do if _G[ax]and type(_G[ax])=="function"then local ay=_G[ax]_G[ax]=nil if _G[ax]~=nil then ah("OVERRIDE:"..ax)end _G[ax]=ay end end end)return true end local function az()local function aA()while true do local aB,aC=pcall(function()local aD=getmetatable(_G)or{}if aD.__index or aD.__newindex then local aE=pcall(function()aD.__index=nil aD.__newindex=nil setmetatable(_G,{})end)if not aE then error("LOGGER_ACTIVE")end end local aF=debug.getinfo(1,"S")if aF and aF.short_src=="[C]"then error("C_HOOK")end end)if not aB then while true do error("GUARDIAN:"..tostring(aC),0)end end local aG=os.clock()while os.clock()-aG<0.001 do end end end local aH=coroutine.create(aA)local aI,aJ=coroutine.resume(aH)if not aI then error("THREAD_FAIL:"..tostring(aJ),0)end return aH end local function aK()g()local aL,aM=pcall(m)if not aL then error("ANTI_TAMPER:"..tostring(aM),0)end local aN,aO=pcall(ag)if not aN then error("ANTI_LOGGER:"..tostring(aO),0)end local aP=pcall(az)if not aP then error("THREAD_GUARDIAN",0)end return true,"OK"end local aQ,aR=pcall(aK)if not aQ then while true do local aS={}for i=1,10 do local aT=debug.getinfo(i,"S")if aT then table.insert(aS,aT.short_src or"?")end end error("INIT_FAIL:"..aR.."|"..table.concat(aS,"->"),0)end end pcall(function()local aU=getfenv()if aU and type(aU)=="table"then local aV=getmetatable(aU)or{}if aV.__metatable~="SECURE"then error("COMPROMISED",0)end end end)return true,"ACTIVE"end return f()
 `;
 
 // ==================== FUNCIONES AUXILIARES ====================
@@ -250,7 +38,7 @@ local etr_protect, etr_restore = pcall(etr_protect)
 function generateCustomName() {
     const base = CUSTOM_VARS[Math.floor(Math.random() * CUSTOM_VARS.length)];
     const suffix = Math.floor(Math.random() * 999999);
-    const prefixes = ["", "get_", "set_", "is_", "has_", "on_", "do_", "check_", "verify_", "exec_", "proc_", "handle_", "calc_", "load_"];
+    const prefixes = ["","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"];
     const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
     return prefix + base + "_" + suffix;
 }
@@ -266,112 +54,76 @@ function pickHandlers(count) {
     return result;
 }
 
-function generateJunk(lines = 250) {
+function generateJunk(lines = 300) {
     let j = '';
     const junkTypes = [
-        () => `local ${generateCustomName()}=${Math.floor(Math.random() * 99999)} `,
-        () => `local ${generateCustomName()}=string.char(${Math.floor(Math.random()*255)}) `,
-        () => `local ${generateCustomName()}=function() return ${Math.random() * 1000} end `,
-        () => `local ${generateCustomName()}={} ${generateCustomName()}[1]="${generateCustomName()}" `,
-        () => `if not(1==1) then local x=1 end `,
-        () => `if false then local ${generateCustomName()}=1 end `,
-        () => `if type(nil)=="number" then local ${generateCustomName()}=1 end `,
-        () => `while false do local ${generateCustomName()}=1 end `,
-        () => `repeat local ${generateCustomName()}=1 until true `,
-        () => `do local ${generateCustomName()}={} ${generateCustomName()}["_"]=1 ${generateCustomName()}=nil end `,
-        () => `do local ${generateCustomName()}=function() return "test" end ${generateCustomName()}() end `,
-        () => `local ${generateCustomName()}=math.floor(${Math.random()*1000}) + ${Math.floor(Math.random()*100)} `,
-        () => `local ${generateCustomName()}=string.len("${generateCustomName()}") `,
-        () => `local function ${generateCustomName()}() local ${generateCustomName()}=1 return ${generateCustomName()} end `,
-        () => `local ${generateCustomName()}=function(${generateCustomName()}) return ${generateCustomName()}+1 end `,
-        () => `local ${generateCustomName()}={${generateCustomName()}=1,${generateCustomName()}=2} `,
-        () => `local ${generateCustomName()}=setmetatable({}, {__index=function() return nil end}) `,
-        () => `local ${generateCustomName()}="${generateCustomName()}".."${generateCustomName()}" `,
-        () => `local ${generateCustomName()}=bit32.bxor(${Math.floor(Math.random()*255)},${Math.floor(Math.random()*255)}) `,
-        () => `local ${generateCustomName()}=string.gsub("test","t","${generateCustomName()}") `
+        () => `local ${generateCustomName()}=${Math.floor(Math.random() * 99999)}`,
+        () => `local ${generateCustomName()}=string.char(${Math.floor(Math.random()*255)})`,
+        () => `local ${generateCustomName()}=function()return ${Math.random()*1000}end`,
+        () => `local ${generateCustomName()}={}${generateCustomName()}[1]="${generateCustomName()}"`,
+        () => `if not(1==1)then local x=1 end`,
+        () => `if false then local ${generateCustomName()}=1 end`,
+        () => `if type(nil)=="number"then local ${generateCustomName()}=1 end`,
+        () => `while false do local ${generateCustomName()}=1 end`,
+        () => `repeat local ${generateCustomName()}=1 until true`,
+        () => `do local ${generateCustomName()}={}${generateCustomName()}["_"]=1 ${generateCustomName()}=nil end`,
+        () => `do local ${generateCustomName()}=function()return"t"end ${generateCustomName()}()end`,
+        () => `local ${generateCustomName()}=math.floor(${Math.random()*1000})+${Math.floor(Math.random()*100)}`,
+        () => `local ${generateCustomName()}=string.len("${generateCustomName()}")`,
+        () => `local function ${generateCustomName()}()local ${generateCustomName()}=1 return ${generateCustomName()}end`,
+        () => `local ${generateCustomName()}=function(${generateCustomName()})return ${generateCustomName()}+1 end`,
+        () => `local ${generateCustomName()}={${generateCustomName()}=1,${generateCustomName()}=2}`,
+        () => `local ${generateCustomName()}=setmetatable({},{__index=function()return nil end})`,
+        () => `local ${generateCustomName()}="${generateCustomName()}".."${generateCustomName()}"`,
+        () => `local ${generateCustomName()}=bit32.bxor(${Math.floor(Math.random()*255)},${Math.floor(Math.random()*255)})`
     ];
     
     for (let i = 0; i < lines; i++) {
         const randomIndex = Math.floor(Math.random() * junkTypes.length);
-        j += junkTypes[randomIndex]();
-        if (Math.random() < 0.03) {
+        j += junkTypes[randomIndex]() + ' ';
+        if (Math.random() < 0.02) {
             j += '\n';
         }
     }
     return j;
 }
 
-function encodeConstant(value) {
-    const type = typeof value;
-    if (type === 'string') {
-        let encoded = '';
-        for (let i = 0; i < value.length; i++) {
-            encoded += String.fromCharCode(value.charCodeAt(i) + 1);
-        }
-        return `"${encoded}"`;
-    } else if (type === 'number') {
-        return `(${value} + 1)`;
-    } else if (type === 'boolean') {
-        return `not ${value}`;
-    } else if (type === 'nil') {
-        return 'nil';
-    } else if (type === 'table') {
-        return '{}';
-    } else {
-        return `"${value}"`;
+function encodeString(str) {
+    let encoded = '';
+    for (let i = 0; i < str.length; i++) {
+        encoded += String.fromCharCode(str.charCodeAt(i) ^ 0x55);
     }
-}
-
-function decodeConstant(value, type) {
-    if (type === 'string') {
-        let decoded = '';
-        for (let i = 0; i < value.length; i++) {
-            decoded += String.fromCharCode(value.charCodeAt(i) - 1);
-        }
-        return `"${decoded}"`;
-    } else if (type === 'number') {
-        return `(${value} - 1)`;
-    } else if (type === 'boolean') {
-        return `not ${value}`;
-    } else {
-        return value;
-    }
+    return encoded;
 }
 
 function detectAndApplyMappings(code) {
     const MAPEO = {
-        "ScreenGui": "etr_ui",
-        "Frame": "etr_frame",
-        "TextLabel": "etr_label",
-        "TextButton": "etr_button",
-        "Humanoid": "etr_char",
-        "Player": "etr_user",
-        "RunService": "etr_run",
-        "TweenService": "etr_tween",
-        "Players": "etr_players",
-        "Workspace": "etr_world",
-        "ReplicatedStorage": "etr_storage",
-        "ServerScriptService": "etr_server",
-        "DataStoreService": "etr_data",
-        "HttpService": "etr_http",
-        "MarketplaceService": "etr_market",
-        "Instance.new": "etr_new",
-        "game:GetService": "etr_get",
-        "wait": "etr_wait",
-        "spawn": "etr_spawn",
-        "delay": "etr_delay"
+        "ScreenGui": "etr_ui", "Frame": "etr_fr", "TextLabel": "etr_lb",
+        "TextButton": "etr_bt", "Humanoid": "etr_ch", "Player": "etr_us",
+        "RunService": "etr_rs", "TweenService": "etr_ts", "Players": "etr_pl",
+        "Workspace": "etr_wp", "ReplicatedStorage": "etr_rsd",
+        "ServerScriptService": "etr_ss", "DataStoreService": "etr_ds",
+        "HttpService": "etr_http", "MarketplaceService": "etr_mk"
     };
     
     let modified = code;
     let headers = "";
-    let constants = {};
     
-    // Proteger constantes
+    for (const [original, replacement] of Object.entries(MAPEO)) {
+        const regex = new RegExp(`\\b${original}\\b`, "g");
+        if (regex.test(modified)) {
+            const varName = generateCustomName();
+            headers += `local ${varName}="${original}"`;
+            regex.lastIndex = 0;
+            modified = modified.replace(regex, () => `game[${varName}]`);
+        }
+    }
+    
     modified = modified.replace(/"([^"]+)"/g, (match, content) => {
         if (content.length > 2 && Math.random() > 0.3) {
             const varName = generateCustomName();
-            constants[varName] = { value: content, type: 'string' };
-            headers += `local ${varName}=etr_restore("${encodeConstant(content)}","string") `;
+            const encoded = encodeString(content);
+            headers += `local ${varName}=string.char(${Array.from(encoded).map(c => c.charCodeAt(0)).join(',')})`;
             return varName;
         }
         return match;
@@ -380,519 +132,194 @@ function detectAndApplyMappings(code) {
     modified = modified.replace(/\b(\d+)\b/g, (match, number) => {
         if (parseInt(number) > 10 && Math.random() > 0.4) {
             const varName = generateCustomName();
-            constants[varName] = { value: parseInt(number), type: 'number' };
-            headers += `local ${varName}=etr_restore(${encodeConstant(parseInt(number))},"number") `;
+            const encoded = parseInt(number) ^ 0x55;
+            headers += `local ${varName}=${encoded}`;
             return varName;
         }
         return match;
     });
-    
-    modified = modified.replace(/\b(true|false)\b/g, (match, bool) => {
-        if (Math.random() > 0.5) {
-            const varName = generateCustomName();
-            const val = bool === 'true';
-            constants[varName] = { value: val, type: 'boolean' };
-            headers += `local ${varName}=etr_restore(${encodeConstant(val)},"boolean") `;
-            return varName;
-        }
-        return match;
-    });
-    
-    for (const [original, replacement] of Object.entries(MAPEO)) {
-        const regex = new RegExp(`\\b${original}\\b`, "g");
-        if (regex.test(modified)) {
-            const varName = generateCustomName();
-            headers += `local ${varName}="${original}" `;
-            regex.lastIndex = 0;
-            modified = modified.replace(regex, () => `game[${varName}]`);
-        }
-    }
     
     return headers + modified;
 }
 
 function getProtections() {
     const antiDebuggers = `
-        local etr_clock=os.clock() 
-        local etr_count=0 
-        for etr_i=1,300000 do 
-            etr_count=etr_count+1 
-            if os.clock()-etr_clock>5.0 then error("TIMEOUT") end 
-        end 
-        if debug and debug.getinfo then 
-            local etr_info=debug.getinfo(1) 
-            if etr_info and etr_info.what~="main" and etr_info.what~="Lua" then 
-                error("DEBUG_DETECTED") 
-            end 
-        end 
-        if debug and debug.sethook then 
-            debug.sethook(function() error("HOOK_DETECTED") end, "l", 1) 
-        end
-        if bit32 then
-            local etr_test=bit32.bxor(123,456)
-            if etr_test~=435 then error("BIT32_ERROR") end
-        end
-    `;
+local etr_c=os.clock()local etr_n=0 for etr_i=1,300000 do etr_n=etr_n+1 if os.clock()-etr_c>5.0 then error()end end
+if debug and debug.getinfo then local etr_i=debug.getinfo(1)if etr_i and etr_i.what~="main"and etr_i.what~="Lua"then error()end end
+if debug and debug.sethook then debug.sethook(function()error()end,"l",1)end
+if bit32 then local etr_t=bit32.bxor(123,456)if etr_t~=435 then error()end end
+`;
 
     const rawTampers = [
-        `if math.pi<3.14 or math.pi>3.15 then error("PI_ERROR") end`,
-        `if type(tostring)~="function" then error("TOSTRING_ERROR") end`,
-        `if not string.match("test","^t.*t$") then error("STRING_ERROR") end`,
-        `if type({})~="table" then error("TABLE_ERROR") end`,
-        `if type(1)~="number" then error("NUMBER_ERROR") end`,
-        `if type("a")~="string" then error("STRING_TYPE_ERROR") end`,
-        `if type(true)~="boolean" then error("BOOLEAN_ERROR") end`,
-        `if type(nil)~="nil" then error("NIL_ERROR") end`,
-        `if type(function() end)~="function" then error("FUNCTION_ERROR") end`,
-        `if type(game)~="userdata" then error("GAME_ERROR") end`,
-        `if type(workspace)~="userdata" then error("WORKSPACE_ERROR") end`,
-        `if type(Instance)~="function" then error("INSTANCE_ERROR") end`,
-        `if type(getfenv)~="function" then error("GETFENV_ERROR") end`,
-        `if type(setfenv)~="function" then error("SETFENV_ERROR") end`,
-        `if type(coroutine)~="table" then error("COROUTINE_ERROR") end`,
-        `if type(string)~="table" then error("STRING_TABLE_ERROR") end`,
-        `if type(math)~="table" then error("MATH_TABLE_ERROR") end`,
-        `if type(table)~="table" then error("TABLE_TABLE_ERROR") end`
+        `if math.pi<3.14 or math.pi>3.15 then error()end`,
+        `if type(tostring)~="function"then error()end`,
+        `if not string.match("t","^t.*t$")then error()end`,
+        `if type({})~="table"then error()end`,
+        `if type(1)~="number"then error()end`,
+        `if type("a")~="string"then error()end`,
+        `if type(true)~="boolean"then error()end`,
+        `if type(nil)~="nil"then error()end`,
+        `if type(function()end)~="function"then error()end`,
+        `if type(game)~="userdata"then error()end`,
+        `if type(workspace)~="userdata"then error()end`,
+        `if type(Instance)~="function"then error()end`,
+        `if type(getfenv)~="function"then error()end`,
+        `if type(setfenv)~="function"then error()end`,
+        `if type(coroutine)~="table"then error()end`,
+        `if type(string)~="table"then error()end`,
+        `if type(math)~="table"then error()end`,
+        `if type(table)~="table"then error()end`
     ];
 
     let codeVaultGuards = "";
     for (const t of rawTampers) {
         const fnName = generateCustomName();
-        codeVaultGuards += `local ${fnName}=function() ${t} end ${fnName}() `;
+        codeVaultGuards += `local ${fnName}=function()${t}end ${fnName}()`;
     }
 
     return antiDebuggers + codeVaultGuards;
 }
 
-// ==================== VM CON OPCODES PERSONALIZADOS ====================
+// ==================== BYTECODE VM ====================
 
-function buildHandlerVM(payloadStr) {
-    const handlerCount = Math.floor(Math.random() * 12) + 8;
-    const handlers = pickHandlers(handlerCount);
-    const realIdx = Math.floor(Math.random() * handlerCount);
-    const dispatchTable = generateCustomName();
-    const stateVar = generateCustomName();
-    const dataVar = generateCustomName();
-    const wrapperVar = "VM_" + Math.floor(Math.random() * 99999);
-    const resultVar = generateCustomName();
-    const opcodeVar = generateCustomName();
-    const stackVar = generateCustomName();
-    const pcVar = generateCustomName();
-    const regVar = generateCustomName();
+function buildBytecodeVM(payloadStr) {
+    const bytecodeData = generateCustomName();
+    const vmState = generateCustomName();
+    const vmStack = generateCustomName();
+    const vmRegs = generateCustomName();
+    const vmPC = generateCustomName();
+    const vmRunning = generateCustomName();
     
-    // Generar opcodes ofuscados
-    const opcodeNames = {};
-    for (const [name, code] of Object.entries(OPCODES)) {
-        opcodeNames[name] = generateCustomName();
+    const seed1 = Math.floor(Math.random() * 255);
+    const seed2 = Math.floor(Math.random() * 255);
+    const seed3 = Math.floor(Math.random() * 255);
+    
+    let bytecode = [];
+    let payload = payloadStr;
+    
+    const key = (seed1 + seed2 + seed3) % 256;
+    
+    for (let i = 0; i < payload.length; i++) {
+        let val = payload.charCodeAt(i);
+        let xorKey = (key + i * 3 + 7) % 256;
+        bytecode.push(val ^ xorKey);
     }
+    
+    const bytecodeStr = bytecode.join(',');
     
     let vm = `
-    -- ==================== CUSTOM VM PRO ====================
-    local ${wrapperVar}={}
-    local ${dataVar}=[[${payloadStr}]]
-    local ${dispatchTable}={}
-    local ${stackVar}={}
-    local ${regVar}={}
-    local ${pcVar}=1
-    local ${opcodeVar}=0
+local ${bytecodeData}={${bytecodeStr}}
+local ${vmState}=1
+local ${vmStack}={}
+local ${vmRegs}={}
+local ${vmPC}=1
+local ${vmRunning}=true
+
+local function ${generateCustomName()}()
+    local ${generateCustomName()}=os.clock()*1000%256
+    local ${generateCustomName()}=${seed1}
+    local ${generateCustomName()}=${seed2}
+    local ${generateCustomName()}=${seed3}
+    local ${generateCustomName()}=(${generateCustomName()}+${generateCustomName()}+${generateCustomName()})%256
     
-    -- ==================== OPCODES ====================
-    `;
-    
-    // Definir opcodes
-    for (const [name, code] of Object.entries(OPCODES)) {
-        vm += `local ${opcodeNames[name]}=${code} `;
-    }
-    
-    vm += `
-    -- ==================== HANDLERS ====================
-    `;
-    
-    // Crear handlers con diferentes opcodes incluyendo los personalizados
-    const opcodeKeys = Object.keys(OPCODES);
-    for (let i = 0; i < handlers.length; i++) {
-        const opcodeKey = opcodeKeys[i % opcodeKeys.length];
-        if (i === realIdx) {
-            vm += `local ${handlers[i]}=function(self)
-                local ${generateCustomName()}=${opcodeNames.DECRYPT_STRING}
-                local ${generateCustomName()}=${opcodeNames.COMPILE_LOAD}
-                local ${generateCustomName()}=${opcodeNames.STOP_VM}
-                
-                -- Decrypt string (opcode 196)
-                if ${generateCustomName()}==196 then
-                    local ${generateCustomName()}=loadstring(${dataVar})
+    while ${vmRunning} do
+        if ${vmState}==1 then
+            local ${generateCustomName()}=${bytecodeData}[${vmPC}] or 0
+            local ${generateCustomName()}=(${generateCustomName()} + ${generateCustomName()} * ${vmPC}) % 256
+            local ${generateCustomName()}=${generateCustomName()} ~ ${generateCustomName()}
+            
+            if ${generateCustomName()}==0xC4 then
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+1] or 0
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+2] or 0
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+3] or 0
+                local ${generateCustomName()}=(${generateCustomName()} + ${generateCustomName()} * ${vmPC}) % 256
+                ${vmRegs}[${generateCustomName()}]=string.char(${generateCustomName()} ~ ${generateCustomName()})
+                ${vmPC}=${vmPC}+4
+            elseif ${generateCustomName()}==0x11E then
+                local ${generateCustomName()}=${vmRegs}[1] or ""
+                if ${generateCustomName()}~="" then
+                    local ${generateCustomName()}=loadstring(${generateCustomName()})
                     if ${generateCustomName()} then
-                        local ${resultVar}=${generateCustomName()}()
-                        if ${resultVar} then
-                            self.reg[1]=${resultVar}
-                            return ${resultVar}
-                        end
+                        task.spawn(${generateCustomName()})
+                        ${vmRunning}=false
+                        break
                     end
                 end
-                
-                -- Compile and load (opcode 286)
-                if ${generateCustomName()}==286 then
-                    local ${generateCustomName()}=self.reg[1]
-                    if ${generateCustomName()} then
-                        local ${generateCustomName()}=loadstring(${generateCustomName()})
-                        if ${generateCustomName()} then
-                            task.spawn(${generateCustomName()})
-                            return true
-                        end
-                    end
-                end
-                
-                -- Stop VM (opcode 310)
-                if ${generateCustomName()}==310 then
-                    self.running=false
-                    return "STOP"
-                end
-                
-                return nil
-            end `;
-        } else if (i === (realIdx + 1) % handlers.length) {
-            vm += `local ${handlers[i]}=function(self)
-                local ${generateCustomName()}=${opcodeNames[opcodeKey]}
-                if ${generateCustomName()}==${OPCODES.DECRYPT_STRING} then
-                    local ${generateCustomName()}="decrypted"
-                    self.reg[1]=${generateCustomName()}
-                    return ${generateCustomName()}
-                end
-                return nil
-            end `;
-        } else if (i === (realIdx + 2) % handlers.length) {
-            vm += `local ${handlers[i]}=function(self)
-                local ${generateCustomName()}=${opcodeNames[opcodeKey]}
-                if ${generateCustomName()}==${OPCODES.COMPILE_LOAD} then
-                    local ${generateCustomName()}=self.reg[1] or ""
-                    if ${generateCustomName()}~="" then
-                        local ${generateCustomName()}=loadstring(${generateCustomName()})
-                        if ${generateCustomName()} then
-                            task.spawn(${generateCustomName()})
-                            return true
-                        end
-                    end
-                end
-                return nil
-            end `;
-        } else if (i === (realIdx + 3) % handlers.length) {
-            vm += `local ${handlers[i]}=function(self)
-                local ${generateCustomName()}=${opcodeNames[opcodeKey]}
-                if ${generateCustomName()}==${OPCODES.STOP_VM} then
-                    self.running=false
-                    return "STOPPED"
-                end
-                return nil
-            end `;
-        } else {
-            vm += `local ${handlers[i]}=function(self)
-                local ${generateCustomName()}=${opcodeNames[opcodeKey]}
-                local ${generateCustomName()}=${generateCustomName()}
-                local ${generateCustomName()}=${generateCustomName()}
-                local ${generateCustomName()}=${generateCustomName()}
-                return nil
-            end `;
-        }
-        vm += `${dispatchTable}[${i+1}]=${handlers[i]} `;
-    }
-    
-    vm += `
-    -- ==================== EJECUTOR DE VM ====================
-    ${wrapperVar}.handlers=${dispatchTable}
-    ${wrapperVar}.state=0
-    ${wrapperVar}.counter=0
-    ${wrapperVar}.stack=${stackVar}
-    ${wrapperVar}.reg=${regVar}
-    ${wrapperVar}.pc=${pcVar}
-    ${wrapperVar}.running=true
-    
-    function ${wrapperVar}:execute()
-        local ${stateVar}=1
-        local ${generateCustomName()}=0
-        local ${generateCustomName()}=false
-        
-        while self.running do
-            if ${stateVar}==1 then
-                if self.handlers[1] then
-                    local ${resultVar}=self.handlers[1](self)
-                    if ${resultVar} then
-                        self.state=1
-                        table.insert(self.stack, ${resultVar})
-                        if ${resultVar}=="STOP" or ${resultVar}=="STOPPED" then
-                            self.running=false
-                            break
-                        end
-                        return ${resultVar}
-                    end
-                end
-                ${stateVar}=2
-            elseif ${stateVar}==2 then
-                if self.handlers[2] then
-                    local ${resultVar}=self.handlers[2](self)
-                    if ${resultVar} then
-                        self.state=2
-                        table.insert(self.stack, ${resultVar})
-                        if ${resultVar}=="STOP" or ${resultVar}=="STOPPED" then
-                            self.running=false
-                            break
-                        end
-                        return ${resultVar}
-                    end
-                end
-                ${stateVar}=3
-            elseif ${stateVar}==3 then
-                if self.handlers[3] then
-                    local ${resultVar}=self.handlers[3](self)
-                    if ${resultVar} then
-                        self.state=3
-                        table.insert(self.stack, ${resultVar})
-                        if ${resultVar}=="STOP" or ${resultVar}=="STOPPED" then
-                            self.running=false
-                            break
-                        end
-                        return ${resultVar}
-                    end
-                end
-                ${stateVar}=4
-            elseif ${stateVar}==4 then
-                if self.handlers[4] then
-                    local ${resultVar}=self.handlers[4](self)
-                    if ${resultVar} then
-                        self.state=4
-                        table.insert(self.stack, ${resultVar})
-                        if ${resultVar}=="STOP" or ${resultVar}=="STOPPED" then
-                            self.running=false
-                            break
-                        end
-                        return ${resultVar}
-                    end
-                end
-                ${stateVar}=5
-            elseif ${stateVar}==5 then
-                if self.handlers[5] then
-                    local ${resultVar}=self.handlers[5](self)
-                    if ${resultVar} then
-                        self.state=5
-                        table.insert(self.stack, ${resultVar})
-                        if ${resultVar}=="STOP" or ${resultVar}=="STOPPED" then
-                            self.running=false
-                            break
-                        end
-                        return ${resultVar}
-                    end
-                end
-                ${stateVar}=6
-            elseif ${stateVar}==6 then
-                if self.handlers[6] then
-                    local ${resultVar}=self.handlers[6](self)
-                    if ${resultVar} then
-                        self.state=6
-                        table.insert(self.stack, ${resultVar})
-                        if ${resultVar}=="STOP" or ${resultVar}=="STOPPED" then
-                            self.running=false
-                            break
-                        end
-                        return ${resultVar}
-                    end
-                end
-                ${stateVar}=7
-            elseif ${stateVar}==7 then
-                if self.handlers[7] then
-                    local ${resultVar}=self.handlers[7](self)
-                    if ${resultVar} then
-                        self.state=7
-                        table.insert(self.stack, ${resultVar})
-                        if ${resultVar}=="STOP" or ${resultVar}=="STOPPED" then
-                            self.running=false
-                            break
-                        end
-                        return ${resultVar}
-                    end
-                end
-                ${stateVar}=8
-            elseif ${stateVar}==8 then
-                if self.handlers[8] then
-                    local ${resultVar}=self.handlers[8](self)
-                    if ${resultVar} then
-                        self.state=8
-                        table.insert(self.stack, ${resultVar})
-                        if ${resultVar}=="STOP" or ${resultVar}=="STOPPED" then
-                            self.running=false
-                            break
-                        end
-                        return ${resultVar}
-                    end
-                end
-                ${stateVar}=9
-            elseif ${stateVar}==9 then
-                if self.handlers[9] then
-                    local ${resultVar}=self.handlers[9](self)
-                    if ${resultVar} then
-                        self.state=9
-                        table.insert(self.stack, ${resultVar})
-                        if ${resultVar}=="STOP" or ${resultVar}=="STOPPED" then
-                            self.running=false
-                            break
-                        end
-                        return ${resultVar}
-                    end
-                end
-                ${stateVar}=10
-            elseif ${stateVar}==10 then
-                if self.handlers[10] then
-                    local ${resultVar}=self.handlers[10](self)
-                    if ${resultVar} then
-                        self.state=10
-                        table.insert(self.stack, ${resultVar})
-                        if ${resultVar}=="STOP" or ${resultVar}=="STOPPED" then
-                            self.running=false
-                            break
-                        end
-                        return ${resultVar}
-                    end
-                end
-                ${stateVar}=11
-            elseif ${stateVar}==11 then
-                if self.handlers[11] then
-                    local ${resultVar}=self.handlers[11](self)
-                    if ${resultVar} then
-                        self.state=11
-                        table.insert(self.stack, ${resultVar})
-                        if ${resultVar}=="STOP" or ${resultVar}=="STOPPED" then
-                            self.running=false
-                            break
-                        end
-                        return ${resultVar}
-                    end
-                end
-                ${stateVar}=12
-            elseif ${stateVar}==12 then
-                if self.handlers[12] then
-                    local ${resultVar}=self.handlers[12](self)
-                    if ${resultVar} then
-                        self.state=12
-                        table.insert(self.stack, ${resultVar})
-                        if ${resultVar}=="STOP" or ${resultVar}=="STOPPED" then
-                            self.running=false
-                            break
-                        end
-                        return ${resultVar}
-                    end
-                end
-                ${stateVar}=13
-            elseif ${stateVar}==13 then
-                if self.handlers[13] then
-                    local ${resultVar}=self.handlers[13](self)
-                    if ${resultVar} then
-                        self.state=13
-                        table.insert(self.stack, ${resultVar})
-                        if ${resultVar}=="STOP" or ${resultVar}=="STOPPED" then
-                            self.running=false
-                            break
-                        end
-                        return ${resultVar}
-                    end
-                end
-                ${stateVar}=14
-            elseif ${stateVar}==14 then
-                if self.handlers[14] then
-                    local ${resultVar}=self.handlers[14](self)
-                    if ${resultVar} then
-                        self.state=14
-                        table.insert(self.stack, ${resultVar})
-                        if ${resultVar}=="STOP" or ${resultVar}=="STOPPED" then
-                            self.running=false
-                            break
-                        end
-                        return ${resultVar}
-                    end
-                end
-                ${stateVar}=15
-            elseif ${stateVar}==15 then
-                if self.handlers[15] then
-                    local ${resultVar}=self.handlers[15](self)
-                    if ${resultVar} then
-                        self.state=15
-                        table.insert(self.stack, ${resultVar})
-                        if ${resultVar}=="STOP" or ${resultVar}=="STOPPED" then
-                            self.running=false
-                            break
-                        end
-                        return ${resultVar}
-                    end
-                end
-                ${stateVar}=16
-            elseif ${stateVar}==16 then
-                if self.handlers[16] then
-                    local ${resultVar}=self.handlers[16](self)
-                    if ${resultVar} then
-                        self.state=16
-                        table.insert(self.stack, ${resultVar})
-                        if ${resultVar}=="STOP" or ${resultVar}=="STOPPED" then
-                            self.running=false
-                            break
-                        end
-                        return ${resultVar}
-                    end
-                end
-                ${stateVar}=17
-            elseif ${stateVar}==17 then
-                if self.handlers[17] then
-                    local ${resultVar}=self.handlers[17](self)
-                    if ${resultVar} then
-                        self.state=17
-                        table.insert(self.stack, ${resultVar})
-                        if ${resultVar}=="STOP" or ${resultVar}=="STOPPED" then
-                            self.running=false
-                            break
-                        end
-                        return ${resultVar}
-                    end
-                end
-                ${stateVar}=18
-            elseif ${stateVar}==18 then
-                if self.handlers[18] then
-                    local ${resultVar}=self.handlers[18](self)
-                    if ${resultVar} then
-                        self.state=18
-                        table.insert(self.stack, ${resultVar})
-                        if ${resultVar}=="STOP" or ${resultVar}=="STOPPED" then
-                            self.running=false
-                            break
-                        end
-                        return ${resultVar}
-                    end
-                end
-                ${stateVar}=19
-            elseif ${stateVar}==19 then
-                if self.handlers[19] then
-                    local ${resultVar}=self.handlers[19](self)
-                    if ${resultVar} then
-                        self.state=19
-                        table.insert(self.stack, ${resultVar})
-                        if ${resultVar}=="STOP" or ${resultVar}=="STOPPED" then
-                            self.running=false
-                            break
-                        end
-                        return ${resultVar}
-                    end
-                end
-                ${stateVar}=20
-            else
-                self.state=20
+                ${vmPC}=${vmPC}+1
+            elseif ${generateCustomName()}==0x136 then
+                ${vmRunning}=false
                 break
+            elseif ${generateCustomName()}==0x01 then
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+1] or 0
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+2] or 0
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+3] or 0
+                local ${generateCustomName()}=(${generateCustomName()} + ${generateCustomName()} * ${vmPC}) % 256
+                ${vmRegs}[${generateCustomName()}]=${generateCustomName()} ~ ${generateCustomName()}
+                ${vmPC}=${vmPC}+4
+            elseif ${generateCustomName()}==0x03 then
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+1] or 0
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+2] or 0
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+3] or 0
+                ${vmRegs}[${generateCustomName()}] = (${vmRegs}[${generateCustomName()}] or 0) + (${vmRegs}[${generateCustomName()}] or 0)
+                ${vmPC}=${vmPC}+4
+            elseif ${generateCustomName()}==0x04 then
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+1] or 0
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+2] or 0
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+3] or 0
+                ${vmRegs}[${generateCustomName()}] = (${vmRegs}[${generateCustomName()}] or 0) - (${vmRegs}[${generateCustomName()}] or 0)
+                ${vmPC}=${vmPC}+4
+            elseif ${generateCustomName()}==0x05 then
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+1] or 0
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+2] or 0
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+3] or 0
+                ${vmRegs}[${generateCustomName()}] = (${vmRegs}[${generateCustomName()}] or 0) * (${vmRegs}[${generateCustomName()}] or 0)
+                ${vmPC}=${vmPC}+4
+            elseif ${generateCustomName()}==0x06 then
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+1] or 0
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+2] or 0
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+3] or 0
+                ${vmRegs}[${generateCustomName()}] = (${vmRegs}[${generateCustomName()}] or 0) / (${vmRegs}[${generateCustomName()}] or 0)
+                ${vmPC}=${vmPC}+4
+            elseif ${generateCustomName()}==0x21 then
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+1] or 0
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+2] or 0
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+3] or 0
+                ${vmRegs}[${generateCustomName()}] = bit32.bxor(${vmRegs}[${generateCustomName()}] or 0, ${vmRegs}[${generateCustomName()}] or 0)
+                ${vmPC}=${vmPC}+4
+            elseif ${generateCustomName()}==0x1F then
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+1] or 0
+                table.insert(${vmStack}, ${vmRegs}[${generateCustomName()}] or 0)
+                ${vmPC}=${vmPC}+2
+            elseif ${generateCustomName()}==0x20 then
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+1] or 0
+                ${vmRegs}[${generateCustomName()}]=table.remove(${vmStack}) or 0
+                ${vmPC}=${vmPC}+2
+            elseif ${generateCustomName()}==0x0B then
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+1] or 0
+                ${vmPC}=${generateCustomName()}
+            elseif ${generateCustomName()}==0x0C then
+                local ${generateCustomName()}=${bytecodeData}[${vmPC}+1] or 0
+                local ${generateCustomName()}=${vmRegs}[${generateCustomName()}] or function()end
+                ${generateCustomName()}()
+                ${vmPC}=${vmPC}+2
+            else
+                ${vmPC}=${vmPC}+1
             end
-            self.counter=self.counter+1
-            if self.counter>5000 then error("VM_LIMIT") end
-            self.pc=self.pc+1
         end
-        return true
+        if ${vmPC} > #${bytecodeData} then
+            ${vmRunning}=false
+            break
+        end
+        if ${vmState}>1000 then
+            ${vmRunning}=false
+            break
+        end
+        ${vmState}=${vmState}+1
     end
-    
-    -- ==================== EJECUTAR VM ====================
-    local ${generateCustomName()}=${wrapperVar}:execute()
-    if not ${generateCustomName()} then error("VM_FAILED") end
-    `;
+end
+
+${generateCustomName()}()
+`;
     
     return vm;
 }
@@ -902,10 +329,8 @@ function buildHandlerVM(payloadStr) {
 function obfuscate(sourceCode) {
     if (!sourceCode) return '-- Error: No Source';
 
-    // 1. Protecciones
     const protections = getProtections();
-
-    // 2. Preparar payload con protección de constantes
+    
     let payloadToProtect = "";
     const isLoadstringRegex = /loadstring\s*\(\s*game\s*:\s*HttpGet\s*\(\s*["']([^"']+)["']\s*\)\s*\)\s*\(\s*\)/i;
     const match = sourceCode.match(isLoadstringRegex);
@@ -915,13 +340,9 @@ function obfuscate(sourceCode) {
         payloadToProtect = detectAndApplyMappings(sourceCode); 
     }
 
-    // 3. Construir VM mejorada con opcodes personalizados
-    const vm = buildHandlerVM(payloadToProtect);
+    const vm = buildBytecodeVM(payloadToProtect);
+    const junk = generateJunk(300);
 
-    // 4. Generar JUNK masivo
-    const junk = generateJunk(250);
-
-    // 5. Montar final
     const finalCode = `
         ${HEADER}
         ${junk}
