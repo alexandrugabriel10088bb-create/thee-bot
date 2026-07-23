@@ -11,8 +11,8 @@ const { obfuscate } = require('./obfuscator.js');
 // ----------------------------------------------------------------------
 // SERVER CONFIG
 // ----------------------------------------------------------------------
-const GUILD_ID = process.env.GUILD_ID || 'your-guild-id';
-const AUTO_ROLE_ID = process.env.AUTO_ROLE_ID || 'your-auto-role-id';
+const GUILD_ID = process.env.GUILD_ID || '1528140415276941555';
+const AUTO_ROLE_ID = process.env.AUTO_ROLE_ID || '1529532495832416326';
 
 const client = new Client({
     intents: [
