@@ -1,4 +1,4 @@
-const HEADER = `--[[ Eclipse Obfuscator v3 ]]`;
+const HEADER = `--[[ this code its protected by banana protector ]]`;
 
 // ==================== VARIABLES PERSONALIZADAS ====================
 const CUSTOM_VARS = [
