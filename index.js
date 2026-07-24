@@ -5,6 +5,7 @@ const {
     AttachmentBuilder,
 } = require('discord.js');
 const axios = require('axios');
+const crypto = require('crypto');
 
 const { obfuscate } = require('./obfuscator.js');
 
@@ -13,6 +14,7 @@ const { obfuscate } = require('./obfuscator.js');
 // ----------------------------------------------------------------------
 const GUILD_ID = process.env.GUILD_ID || '1528140415276941555';
 const AUTO_ROLE_ID = process.env.AUTO_ROLE_ID || '1529532495832416326';
+const HOST_API_URL = process.env.HOST_API_URL || 'http://localhost:3000';
 
 const client = new Client({
     intents: [
@@ -82,6 +84,18 @@ async function registerCommands() {
         new SlashCommandBuilder()
             .setName('help')
             .setDescription('Show available commands'),
+
+        new SlashCommandBuilder()
+            .setName('api_host')
+            .setDescription('Host your Lua code with API protection')
+            .addStringOption(opt =>
+                opt.setName('code')
+                    .setDescription('Lua code to host')
+                    .setRequired(false))
+            .addAttachmentOption(opt =>
+                opt.setName('file')
+                    .setDescription('Lua file to host')
+                    .setRequired(false)),
     ];
 
     try {
@@ -102,6 +116,8 @@ client.on('interactionCreate', async interaction => {
             await handleUpload(interaction);
         } else if (interaction.commandName === 'help') {
             await handleHelp(interaction);
+        } else if (interaction.commandName === 'api_host') {
+            await handleApiHost(interaction);
         }
     } catch (err) {
         console.error('Interaction error:', err);
@@ -160,10 +176,8 @@ async function deliverObfuscationResult(interaction, original, obfuscated) {
         )
         .setFooter({ text: 'Banana Obfuscator' });
 
-    // Enviar archivo solo por DM
     try {
         await interaction.user.send({ embeds: [dmEmbed], files: [attachment] });
-        // Mensaje en el canal avisando que se envió por DM
         const channelEmbed = new EmbedBuilder()
             .setColor(0x00FF00)
             .setTitle('✅ Obfuscation completed')
@@ -172,7 +186,6 @@ async function deliverObfuscationResult(interaction, original, obfuscated) {
         
         await interaction.editReply({ embeds: [channelEmbed] });
     } catch (_) {
-        // Si no se puede enviar DM, enviar como archivo adjunto en el canal
         const fallbackEmbed = new EmbedBuilder()
             .setColor(0x00FF00)
             .setTitle('⚠️ Obfuscation completed')
@@ -228,6 +241,7 @@ async function handleHelp(interaction) {
             { name: '/obfuscate', value: 'Obfuscate Lua code or a .lua file. The obfuscated file will be sent to your DMs.', inline: false },
             { name: '/obf', value: 'Alias of /obfuscate.', inline: false },
             { name: '/upload', value: 'Upload Lua code or a file to Pastefy.', inline: false },
+            { name: '/api_host', value: 'Host your Lua code with API protection (rate limiting, browser blocking). The URL will be sent to your DMs.', inline: false },
             { name: '/help', value: 'Show this help message.', inline: false },
         )
         .setFooter({ text: 'Banana Obfuscator' });
@@ -235,6 +249,103 @@ async function handleHelp(interaction) {
     await interaction.reply({ embeds: [embed] });
 }
 
+// ----------------------------------------------------------------------
+// API HOST COMMAND
+// ----------------------------------------------------------------------
+async function handleApiHost(interaction) {
+    const code = interaction.options.getString('code');
+    const file = interaction.options.getAttachment('file');
+
+    if (!code && !file) {
+        await interaction.reply({ 
+            content: 'Please provide code or a .lua file to host.' 
+        });
+        return;
+    }
+
+    let srcCode = code || '';
+    if (file) {
+        try {
+            const res = await axios.get(file.url);
+            srcCode = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
+        } catch (e) {
+            await interaction.reply({ 
+                content: `Could not download the file: ${e.message}` 
+            });
+            return;
+        }
+    }
+
+    await interaction.deferReply();
+
+    try {
+        // Register script with the hosting server
+        const response = await axios.post(`${HOST_API_URL}/register`, {
+            script: srcCode,
+            owner: interaction.user.username,
+            userId: interaction.user.id
+        });
+
+        const scriptUrl = response.data.url;
+        const scriptId = response.data.id;
+
+        // Send DM with the hosted script info
+        const dmEmbed = new EmbedBuilder()
+            .setColor(0xFF6B00)
+            .setTitle('🔒 Code Host Protected')
+            .setDescription(`Your code has been hosted and protected with API security measures.`)
+            .addFields(
+                { 
+                    name: '📦 Hosted Script URL', 
+                    value: `\`${scriptUrl}\``, 
+                    inline: false 
+                },
+                { 
+                    name: '📝 Usage Example', 
+                    value: `\`\`\`lua\nloadstring(game:HttpGet("${scriptUrl}", true))()\n\`\`\``, 
+                    inline: false 
+                },
+                { 
+                    name: '🛡️ Protection Features', 
+                    value: '• Rate Limiting (100 req/15min)\n• Browser Blocking\n• IP-based security\n• Script ID: `' + scriptId + '`', 
+                    inline: false 
+                },
+                { 
+                    name: '📊 Statistics URL', 
+                    value: `\`${HOST_API_URL}/stats/${scriptId}\``, 
+                    inline: false 
+                }
+            )
+            .setFooter({ 
+                text: `Protected by ${interaction.user.username} • Banana API Host` 
+            });
+
+        await interaction.user.send({ embeds: [dmEmbed] });
+        
+        // Channel confirmation message
+        const channelEmbed = new EmbedBuilder()
+            .setColor(0xFF6B00)
+            .setTitle('✅ Code Hosted Successfully')
+            .setDescription(`${interaction.user}, your code has been hosted and protected. Check your DMs for the URL.`)
+            .addFields(
+                { name: 'Script ID', value: `\`${scriptId}\``, inline: true },
+                { name: 'Protection', value: 'Rate Limited + Browser Blocked', inline: true }
+            )
+            .setFooter({ text: 'Banana API Host' });
+        
+        await interaction.editReply({ embeds: [channelEmbed] });
+
+    } catch (err) {
+        console.error('API Host error:', err);
+        await interaction.editReply({ 
+            content: `Error during hosting: ${err.message}. Make sure the hosting server is running.` 
+        });
+    }
+}
+
+// ----------------------------------------------------------------------
+// PASTEFY UPLOAD
+// ----------------------------------------------------------------------
 async function uploadToPastefy(code) {
     const res = await axios.post('https://pastefy.app/api/v2/paste', {
         content: code,
@@ -249,4 +360,7 @@ async function uploadToPastefy(code) {
     };
 }
 
+// ----------------------------------------------------------------------
+// LOGIN
+// ----------------------------------------------------------------------
 client.login(process.env.TOKEN);
