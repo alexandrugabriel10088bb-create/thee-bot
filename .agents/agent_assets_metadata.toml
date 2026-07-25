@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "OueuXbkxxD_QI2U-hDlnp"
+uri = "file://thee-bot-railway-ready.zip"
+type = "unspecified"
+title = "Thee Bot + Hosting API listo para Railway"

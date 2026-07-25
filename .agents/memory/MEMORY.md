@@ -1,0 +1,1 @@
+- [Discord copy button behavior](discord-copy-button.md) — use an ephemeral response because bot buttons cannot write to the clipboard directly.
