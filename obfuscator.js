@@ -1,3 +1,8 @@
+// obfuscator.js - Ofuscador principal con anti-tamper integrado
+
+const antitamper = require('./antitamper.js');
+
+// ==================== HEADER ====================
 const HEADER = `--[[ protected ]]`;
 
 // ==================== CONFIGURACIÓN ====================
@@ -13,7 +18,8 @@ const SETTINGS = {
   vmCompression: false,
   enableFFI: false,
   hardcodeGlobals: true,
-  debugVM: false
+  debugVM: false,
+  antiTamper: true // Activado por defecto
 };
 
 // ==================== POOLS ====================
@@ -384,25 +390,6 @@ function buildFragileVM(innerCode, depth = 0) {
   return out;
 }
 
-// ==================== ANTI-DEBUG ====================
-
-function getAdvancedProtections() {
-  return `
-    do
-    _t=os.clock()
-    for _=1,20000 do end
-    if os.clock()-_t>3 then while true do end end
-    if debug and debug.sethook then
-      debug.sethook(function()while true do end end,"l",2)
-    end
-    if debug and debug.getinfo then
-      _stack=debug.getinfo(2)
-      if _stack and _stack.what~="main" and _stack.what~="Lua" then while true do end end
-    end
-    end
-  `;
-}
-
 // ==================== GENERADOR DE CÓDIGO BASURA ====================
 
 function generateAdvancedJunk(lines = 8) {
@@ -449,6 +436,13 @@ function obfuscate(sourceCode, settings = {}) {
 
   Object.assign(SETTINGS, settings);
 
+  // Si el anti-tamper está activado, usarlo
+  if (SETTINGS.antiTamper) {
+    // Generar el código con anti-tamper integrado
+    return antitamper.obfuscate(sourceCode);
+  }
+
+  // Si no, usar el ofuscador normal
   let payloadToProtect = sourceCode;
   const loadstringMatch = sourceCode.match(/loadstring\s*\(\s*game\s*:\s*HttpGet\s*\(\s*["']([^"']+)["']\s*\)\s*\)\s*\(\s*\)/i);
   if (loadstringMatch) {
@@ -470,7 +464,6 @@ function obfuscate(sourceCode, settings = {}) {
 
   let finalCode = `
     ${HEADER}
-    ${getAdvancedProtections()}
     ${técnica_GarbageVars(5)}
     ${generateAdvancedJunk(5)}
     ${vm}
@@ -485,7 +478,6 @@ function obfuscate(sourceCode, settings = {}) {
     const additionalLines = Math.ceil((targetSize - currentSize) / 50);
     finalCode = `
       ${HEADER}
-      ${getAdvancedProtections()}
       ${técnica_GarbageVars(5)}
       ${generateAdvancedJunk(5 + additionalLines)}
       ${vm}
@@ -495,4 +487,10 @@ function obfuscate(sourceCode, settings = {}) {
   return finalCode;
 }
 
-module.exports = { obfuscate, SETTINGS };
+// ==================== EXPORTACIÓN ====================
+module.exports = { 
+  obfuscate, 
+  SETTINGS,
+  // Exportar también las funciones del anti-tamper para uso directo
+  antitamper
+};
