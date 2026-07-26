@@ -1,4 +1,4 @@
-const HEADER = `--[[ VMProtect Ultimate ]]`;
+const HEADER = `--[[ protected ]]`;
 
 // ==================== CONFIGURACIÓN ====================
 const SETTINGS = {
@@ -46,620 +46,11 @@ const VAR_PREFIXES = [
 ];
 
 const HANDLER_POOL = ["KQ","HF","W8","SX","Rj","nT","pL","qZ","mV","xB","yC","wD"];
-
-// ==================== TÉCNICAS DE OFUSCACIÓN ====================
-
-// 1. String Splitting
-function técnica_StringSplitting(str) {
-  const parts = [];
-  for (let i = 0; i < str.length; i += 3) {
-    parts.push(`"${str.slice(i, i + 3)}"`);
-  }
-  return parts.join('..');
-}
-
-// 2. Table Indirection
-function técnica_TableIndirection(str) {
-  const tableName = generateIlName();
-  const keys = [];
-  let code = `${tableName}={`;
-  for (let i = 0; i < str.length; i++) {
-    const key = generateIlName();
-    keys.push(key);
-    code += `[${key}]="${str[i]}",`;
-  }
-  code += `}`;
-  return { code, tableName, keys };
-}
-
-// 3. Function Wrapping
-function técnica_FunctionWrapping(code) {
-  const fnName = generateIlName();
-  return `${fnName}=function()${code}end ${fnName}()`;
-}
-
-// 4. Control Flow Flattening
-function técnica_ControlFlowFlattening(blocks) {
-  const stateVar = generateIlName();
-  let code = `${stateVar}=1 while true do `;
-  for (let i = 0; i < blocks.length; i++) {
-    if (i === 0) code += `if ${stateVar}==1 then ${blocks[i]} ${stateVar}=2 `;
-    else code += `elseif ${stateVar}==${i+1} then ${blocks[i]} ${stateVar}=${i+2} `;
-  }
-  code += `elseif ${stateVar}==${blocks.length+1} then break end end `;
-  return code;
-}
-
-// 5. Dead Code Insertion
-function técnica_DeadCode() {
-  const varName = generateIlName();
-  return `${varName}=function()${varName}()end`;
-}
-
-// 6. Opaque Predicates
-function técnica_OpaquePredicates() {
-  const a = Math.floor(Math.random() * 100);
-  const b = Math.floor(Math.random() * 100);
-  const c = Math.floor(Math.random() * 100);
-  return `((${a}+${b})*${c}==${(a+b)*c})`;
-}
-
-// 7. Self-Modifying Code
-function técnica_SelfModifying(code) {
-  const varName = generateIlName();
-  return `${varName}=[[${code}]] loadstring(${varName})()`;
-}
-
-// 8. Environment Swapping
-function técnica_EnvironmentSwapping(code) {
-  const envName = generateIlName();
-  return `${envName}=getfenv() getfenv=function()return ${envName}end ${code}`;
-}
-
-// 9. Garbage Variables
-function técnica_GarbageVars(count = 15) {
-  let code = '';
-  for (let i = 0; i < count; i++) {
-    const name = generateIlName();
-    code += `${name}=${Math.random() > 0.5 ? `"${generateIlName()}"` : '{}'} `;
-  }
-  return code;
-}
-
-// 10. String Encoding XOR
-function técnica_StringEncoding(str) {
-  const encoded = [];
-  const key = Math.floor(Math.random() * 255);
-  for (let i = 0; i < str.length; i++) {
-    encoded.push(str.charCodeAt(i) ^ key);
-  }
-  const tableName = generateIlName();
-  return `${tableName}={${encoded.join(',')}} string.char(unpack(${tableName}))`;
-}
-
-// 11. Dynamic Dispatch
-function técnica_DynamicDispatch(handlers) {
-  const dispatchName = generateIlName();
-  let code = `${dispatchName}=function(idx)`;
-  code += `local handlers={${handlers.join(',')}}`;
-  code += `return handlers[idx]`;
-  code += `end`;
-  return code;
-}
-
-// 12. Metatable Obfuscation
-function técnica_MetatableObfuscation() {
-  const tableName = generateIlName();
-  const metaName = generateIlName();
-  return `
-    ${tableName}={}
-    ${metaName}={__index=function(t,k)return rawget(t,k)or nil end}
-    setmetatable(${tableName},${metaName})
-  `;
-}
-
-// 13. Coroutine Obfuscation
-function técnica_CoroutineObfuscation(code) {
-  const coName = generateIlName();
-  return `${coName}=coroutine.wrap(function()${code}end) ${coName}()`;
-}
-
-// 14. Bytecode Obfuscation
-function técnica_BytecodeObfuscation(str) {
-  const bytes = [];
-  for (let i = 0; i < str.length; i++) {
-    bytes.push(string.char(str.charCodeAt(i) + 1));
-  }
-  return bytes.join('');
-}
-
-// 15. Variable Renaming
-function técnica_VariableRenaming() {
-  return generateIlName();
-}
-
-// ==================== VM MACHINES ====================
-
-// VM 1: Stack-Based VM
-function VM_StackBased(payload) {
-  const stackName = generateIlName();
-  const ipName = generateIlName();
-  const code = `
-    -- Stack-Based VM
-    ${stackName}={}
-    ${ipName}=1
-    _instructions={${payload}}
-    while ${ipName}<=#_instructions do
-      local op=_instructions[${ipName}]
-      if op=="push" then
-        ${ipName}=${ipName}+1
-        table.insert(${stackName},_instructions[${ipName}])
-      elseif op=="add" then
-        local b=table.remove(${stackName})
-        local a=table.remove(${stackName})
-        table.insert(${stackName},a+b)
-      elseif op=="call" then
-        local f=table.remove(${stackName})
-        f()
-      end
-      ${ipName}=${ipName}+1
-    end
-  `;
-  return code;
-}
-
-// VM 2: Register-Based VM
-function VM_RegisterBased(payload) {
-  const regName = generateIlName();
-  const code = `
-    -- Register-Based VM
-    ${regName}={}
-    _instructions={${payload}}
-    for _,instr in ipairs(_instructions) do
-      if instr[1]=="mov" then ${regName}[instr[2]]=instr[3]
-      elseif instr[1]=="add" then ${regName}[instr[2]]=${regName}[instr[2]]+${regName}[instr[3]]
-      elseif instr[1]=="call" then ${regName}[instr[2]]()
-      end
-    end
-  `;
-  return code;
-}
-
-// VM 3: Thread-Based VM
-function VM_ThreadBased(payload) {
-  const threadName = generateIlName();
-  const code = `
-    -- Thread-Based VM
-    ${threadName}=coroutine.create(function()
-      ${payload}
-    end)
-    while coroutine.status(${threadName})~="dead" do
-      coroutine.resume(${threadName})
-    end
-  `;
-  return code;
-}
-
-// VM 4: Table-Based VM
-function VM_TableBased(payload) {
-  const tableName = generateIlName();
-  const code = `
-    -- Table-Based VM
-    ${tableName}={}
-    ${tableName}.instructions={${payload}}
-    ${tableName}.pc=1
-    ${tableName}.stack={}
-    function ${tableName}.exec()
-      while ${tableName}.pc<=#${tableName}.instructions do
-        local op=${tableName}.instructions[${tableName}.pc]
-        if op=="push" then
-          ${tableName}.pc=${tableName}.pc+1
-          table.insert(${tableName}.stack,${tableName}.instructions[${tableName}.pc])
-        elseif op=="call" then
-          local f=table.remove(${tableName}.stack)
-          f()
-        end
-        ${tableName}.pc=${tableName}.pc+1
-      end
-    end
-    ${tableName}.exec()
-  `;
-  return code;
-}
-
-// VM 5: Metatable-Based VM
-function VM_MetatableBased(payload) {
-  const vmName = generateIlName();
-  const metaName = generateIlName();
-  const code = `
-    -- Metatable-Based VM
-    ${vmName}={}
-    ${metaName}={}
-    ${metaName}.__index=function(t,k)
-      return function(...)
-        return t[k](...)
-      end
-    end
-    setmetatable(${vmName},${metaName})
-    ${vmName}.instructions={${payload}}
-    ${vmName}.pc=1
-    ${vmName}.stack={}
-    ${vmName}.exec=function(self)
-      while self.pc<=#self.instructions do
-        local op=self.instructions[self.pc]
-        if op=="push" then
-          self.pc=self.pc+1
-          table.insert(self.stack,self.instructions[self.pc])
-        elseif op=="call" then
-          local f=table.remove(self.stack)
-          f()
-        end
-        self.pc=self.pc+1
-      end
-    end
-    ${vmName}:exec()
-  `;
-  return code;
-}
-
-// VM 6: Environment-Based VM
-function VM_EnvironmentBased(payload) {
-  const envName = generateIlName();
-  const code = `
-    -- Environment-Based VM
-    ${envName}={}
-    setfenv(0,${envName})
-    ${envName}.instructions={${payload}}
-    ${envName}.pc=1
-    ${envName}.stack={}
-    ${envName}.exec=function()
-      while ${envName}.pc<=#${envName}.instructions do
-        local op=${envName}.instructions[${envName}.pc]
-        if op=="push" then
-          ${envName}.pc=${envName}.pc+1
-          table.insert(${envName}.stack,${envName}.instructions[${envName}.pc])
-        elseif op=="call" then
-          local f=table.remove(${envName}.stack)
-          f()
-        end
-        ${envName}.pc=${envName}.pc+1
-      end
-    end
-    ${envName}.exec()
-  `;
-  return code;
-}
-
-// VM 7: Closure-Based VM
-function VM_ClosureBased(payload) {
-  const closureName = generateIlName();
-  const code = `
-    -- Closure-Based VM
-    ${closureName}=function()
-      local stack={}
-      local pc=1
-      local instructions={${payload}}
-      while pc<=#instructions do
-        local op=instructions[pc]
-        if op=="push" then
-          pc=pc+1
-          table.insert(stack,instructions[pc])
-        elseif op=="call" then
-          local f=table.remove(stack)
-          f()
-        end
-        pc=pc+1
-      end
-    end
-    ${closureName}()
-  `;
-  return code;
-}
-
-// VM 8: Hybrid VM (Stack + Register)
-function VM_Hybrid(payload) {
-  const vmName = generateIlName();
-  const code = `
-    -- Hybrid VM
-    ${vmName}={
-      stack={},
-      registers={},
-      pc=1,
-      instructions={${payload}}
-    }
-    function ${vmName}:exec()
-      while self.pc<=#self.instructions do
-        local op=self.instructions[self.pc]
-        if op=="push" then
-          self.pc=self.pc+1
-          table.insert(self.stack,self.instructions[self.pc])
-        elseif op=="mov" then
-          self.pc=self.pc+1
-          self.registers[self.instructions[self.pc]]=self.instructions[self.pc+1]
-        elseif op=="add" then
-          local b=table.remove(self.stack)
-          local a=table.remove(self.stack)
-          table.insert(self.stack,a+b)
-        elseif op=="call" then
-          local f=table.remove(self.stack)
-          f()
-        end
-        self.pc=self.pc+1
-      end
-    end
-    ${vmName}:exec()
-  `;
-  return code;
-}
-
-// ==================== COMPONENTES DE VM ====================
-
-function componente_InstructionDecoder() {
-  const decoderName = generateIlName();
-  return `
-    -- Instruction Decoder
-    ${decoderName}=function(instruction)
-      local op=string.sub(instruction,1,3)
-      local args={}
-      local count=0
-      for arg in string.gmatch(string.sub(instruction,4),"[^,]+") do
-        count=count+1
-        args[count]=arg
-      end
-      return op,args
-    end
-  `;
-}
-
-function componente_MemoryManager() {
-  const memName = generateIlName();
-  return `
-    -- Memory Manager
-    ${memName}={
-      heap={},
-      stack={},
-      globals={}
-    }
-    function ${memName}:alloc(size)
-      local addr=#self.heap+1
-      self.heap[addr]={}
-      return addr
-    end
-    function ${memName}:free(addr)
-      self.heap[addr]=nil
-    end
-    function ${memName}:push(value)
-      table.insert(self.stack,value)
-    end
-    function ${memName}:pop()
-      return table.remove(self.stack)
-    end
-  `;
-}
-
-function componente_BytecodeCompiler() {
-  const compilerName = generateIlName();
-  return `
-    -- Bytecode Compiler
-    ${compilerName}=function(source)
-      local bytecode={}
-      for line in string.gmatch(source,"[^\\n]+") do
-        local op,args=componente_InstructionDecoder(line)
-        table.insert(bytecode,{op,args})
-      end
-      return bytecode
-    end
-  `;
-}
-
-function componente_ExecutionEngine() {
-  const engineName = generateIlName();
-  return `
-    -- Execution Engine
-    ${engineName}=function(bytecode)
-      local pc=1
-      while pc<=#bytecode do
-        local instr=bytecode[pc]
-        local op=instr[1]
-        local args=instr[2]
-        if op=="push" then
-          componente_MemoryManager:push(args[1])
-        elseif op=="call" then
-          local f=componente_MemoryManager:pop()
-          f()
-        elseif op=="add" then
-          local b=componente_MemoryManager:pop()
-          local a=componente_MemoryManager:pop()
-          componente_MemoryManager:push(a+b)
-        end
-        pc=pc+1
-      end
-    end
-  `;
-}
-
-function componente_Debugger() {
-  const debugName = generateIlName();
-  return `
-    -- Debugger
-    ${debugName}={
-      breakpoints={},
-      watchpoints={},
-      step=false
-    }
-    function ${debugName}:addBreakpoint(address)
-      self.breakpoints[address]=true
-    end
-    function ${debugName}:addWatchpoint(variable)
-      self.watchpoints[variable]=true
-    end
-    function ${debugName}:stepInto()
-      self.step=true
-    end
-    function ${debugName}:check(address,variables)
-      if self.breakpoints[address] then
-        print("Breakpoint hit at",address)
-      end
-      for k,v in pairs(self.watchpoints) do
-        if variables[k]~=v then
-          print("Watchpoint triggered:",k,variables[k])
-        end
-      end
-    end
-  `;
-}
-
-function componente_Profiler() {
-  const profName = generateIlName();
-  return `
-    -- Profiler
-    ${profName}={
-      counters={},
-      startTime=os.clock()
-    }
-    function ${profName}:start()
-      self.startTime=os.clock()
-    end
-    function ${profName}:stop()
-      return os.clock()-self.startTime
-    end
-    function ${profName}:count(instruction)
-      self.counters[instruction]=(self.counters[instruction] or 0)+1
-    end
-  `;
-}
-
-function componente_GarbageCollector() {
-  const gcName = generateIlName();
-  return `
-    -- Garbage Collector
-    ${gcName}={
-      threshold=1000,
-      count=0
-    }
-    function ${gcName}:collect()
-      self.count=self.count+1
-      if self.count>=self.threshold then
-        collectgarbage()
-        self.count=0
-      end
-    end
-  `;
-}
-
-function componente_ExceptionHandler() {
-  const ehName = generateIlName();
-  return `
-    -- Exception Handler
-    ${ehName}=function(err)
-      local stack=debug and debug.traceback or "No traceback"
-      return {
-        error=err,
-        traceback=stack
-      }
-    end
-  `;
-}
-
-function componente_Optimizer() {
-  const optName = generateIlName();
-  return `
-    -- Optimizer
-    ${optName}=function(bytecode)
-      local optimized={}
-      local pc=1
-      while pc<=#bytecode do
-        local instr=bytecode[pc]
-        local nextInstr=bytecode[pc+1]
-        if instr[1]=="push" and nextInstr and nextInstr[1]=="pop" then
-          pc=pc+2
-        else
-          table.insert(optimized,instr)
-          pc=pc+1
-        end
-      end
-      return optimized
-    end
-  `;
-}
-
-function componente_Linker() {
-  const linkerName = generateIlName();
-  return `
-    -- Linker
-    ${linkerName}=function(modules)
-      local linked={}
-      for _,module in ipairs(modules) do
-        for _,instr in ipairs(module) do
-          table.insert(linked,instr)
-        end
-      end
-      return linked
-    end
-  `;
-}
-
-// ==================== GENERADOR DE CÓDIGO BASURA AVANZADO ====================
-
-function generateAdvancedJunk(lines = 30) {
-  let j = '';
-  const techniques = [
-    () => técnica_DeadCode(),
-    () => técnica_MetatableObfuscation(),
-    () => técnica_OpaquePredicates(),
-    () => {
-      const name = generateIlName();
-      return `${name}=setmetatable({}, {__index=function()return nil end})`;
-    },
-    () => {
-      const name = generateIlName();
-      return `${name}=coroutine.wrap(function()coroutine.yield()end)`;
-    },
-    () => {
-      const name = generateIlName();
-      return `${name}=debug and debug.getinfo and debug.getinfo(1) or {}`;
-    },
-    () => {
-      const name = generateIlName();
-      return `${name}=string.gsub("${generateIlName()}", ".", function(c)return string.char(string.byte(c)+1)end)`;
-    },
-    () => {
-      const name = generateIlName();
-      return `${name}=table.pack and table.pack(${generateIlName()}) or {}`;
-    },
-    () => {
-      const name = generateIlName();
-      return `${name}=tonumber("${Math.floor(Math.random() * 999)}") or 0`;
-    }
-  ];
-
-  for (let i = 0; i < lines; i++) {
-    const tech = techniques[Math.floor(Math.random() * techniques.length)];
-    j += tech() + ' ';
-  }
-  return j;
-}
-
-// ==================== ANTI-DEBUG AVANZADO ====================
-
-function getAdvancedProtections() {
-  return `
-    -- Anti-Debug System
-    _t=os.clock()for _=1,50000 do end if os.clock()-_t>3 then while true do end end
-    if debug and debug.sethook then debug.sethook(function()while true do end end,"l",2)end
-    if debug and debug.getinfo then 
-      _stack=debug.getinfo(2) 
-      if _stack and _stack.what~="main" and _stack.what~="Lua" then while true do end end 
-    end
-    if getfenv and getfenv()~=_ENV then while true do end end
-    if bit32 and bit32.bxor then
-      if bit32.bxor(10,5)~=15 then while true do end end
-    end
-    if type(tostring)~="function" then while true do end end
-    if not string.match("chk","^c.*k$") then while true do end end
-    local _tm1=os.time() local _tm2=os.time() if _tm2<_tm1 then while true do end end
-  `;
-}
+const OPCODE_POOL = [
+  "ADD", "SUB", "MUL", "DIV", "MOD", "POW", 
+  "CONCAT", "LEN", "EQ", "LT", "LE", "NOT", 
+  "AND", "OR", "LOAD", "STORE", "CALL", "RETURN"
+];
 
 // ==================== FUNCIONES AUXILIARES ====================
 
@@ -667,7 +58,16 @@ function generateVarName() {
   const prefix = VAR_PREFIXES[Math.floor(Math.random() * VAR_PREFIXES.length)];
   const suffix = VAR_SUFFIXES[Math.floor(Math.random() * VAR_SUFFIXES.length)];
   const number = Math.floor(Math.random() * 9999);
-  return `${prefix}${suffix}${number}`;
+  
+  const combinations = [
+    `${prefix}${suffix}${number}`,
+    `${prefix}${number}${suffix}`,
+    `${prefix}_${number}`,
+    `${prefix}${number}`,
+    `${prefix}${suffix}`
+  ];
+  
+  return combinations[Math.floor(Math.random() * combinations.length)];
 }
 
 function generateIlName() {
@@ -689,41 +89,191 @@ function runtimeString(str) {
   return `string.char(${str.split('').map(c => c.charCodeAt(0)).join(',')})`;
 }
 
-// ==================== DETECCIÓN DE MAPPINGS ====================
+// ==================== TÉCNICAS DE OFUSCACIÓN ====================
 
-function detectAndApplyMappings(code) {
-  const MAPEO = {
-    "ScreenGui":"Aggressive Renaming","Frame":"String to Math","TextLabel":"Table Indirection",
-    "TextButton":"Mixed Boolean Arithmetic","Humanoid":"Dynamic Junk","Player":"Fake Flow",
-    "RunService":"Virtual Machine","TweenService":"Fake Flow","Players":"Fake Flow"
-  };
-  
-  let modified = code, headers = "";
-  
-  for (const [word, tech] of Object.entries(MAPEO)) {
-    const regex = new RegExp(`\\b${word}\\b`, "g");
-    if (regex.test(modified)) {
-      if (tech.includes("Aggressive Renaming")) { 
-        const v = generateIlName(); 
-        headers += `${v}="${word}";`; 
-        modified = modified.replace(regex, v);
-      } else if (tech.includes("Table Indirection")) {
-        const { code: tableCode, tableName, keys } = técnica_TableIndirection(word);
-        headers += tableCode;
-        modified = modified.replace(regex, `${tableName}[${keys[Math.floor(Math.random() * keys.length)]}]`);
-      } else if (tech.includes("Fake Flow")) {
-        const blocks = [
-          `${word}="fake"`,
-          `${word}="real"`,
-          `${word}="${word}"`
-        ];
-        modified = modified.replace(regex, técnica_ControlFlowFlattening(blocks));
-      } else if (tech.includes("String to Math")) {
-        modified = modified.replace(regex, técnica_StringEncoding(word));
-      }
-    }
+function técnica_StringSplitting(str) {
+  const parts = [];
+  for (let i = 0; i < str.length; i += 3) {
+    parts.push(`"${str.slice(i, i + 3)}"`);
   }
-  return headers + modified;
+  return parts.join('..');
+}
+
+function técnica_TableIndirection(str) {
+  const tableName = generateIlName();
+  const keys = [];
+  let code = `${tableName}={`;
+  for (let i = 0; i < str.length; i++) {
+    const key = generateIlName();
+    keys.push(key);
+    code += `[${key}]="${str[i]}",`;
+  }
+  code += `}`;
+  return { code, tableName, keys };
+}
+
+function técnica_FunctionWrapping(code) {
+  const fnName = generateIlName();
+  return `local ${fnName}=function()${code}end ${fnName}()`;
+}
+
+function técnica_ControlFlowFlattening(blocks) {
+  const stateVar = generateIlName();
+  let code = `local ${stateVar}=1 while true do `;
+  for (let i = 0; i < blocks.length; i++) {
+    if (i === 0) code += `if ${stateVar}==1 then ${blocks[i]} ${stateVar}=2 `;
+    else code += `elseif ${stateVar}==${i+1} then ${blocks[i]} ${stateVar}=${i+2} `;
+  }
+  code += `elseif ${stateVar}==${blocks.length+1} then break end end `;
+  return code;
+}
+
+function técnica_DeadCode() {
+  const varName = generateIlName();
+  return `local ${varName}=function()${varName}()end`;
+}
+
+function técnica_OpaquePredicates() {
+  const a = Math.floor(Math.random() * 100);
+  const b = Math.floor(Math.random() * 100);
+  const c = Math.floor(Math.random() * 100);
+  return `((${a}+${b})*${c}==${(a+b)*c})`;
+}
+
+function técnica_SelfModifying(code) {
+  const varName = generateIlName();
+  return `local ${varName}=[[${code}]] loadstring(${varName})()`;
+}
+
+function técnica_GarbageVars(count = 10) {
+  let code = '';
+  for (let i = 0; i < count; i++) {
+    const name = generateIlName();
+    code += `local ${name}=${Math.random() > 0.5 ? `"${generateIlName()}"` : '{}'} `;
+  }
+  return code;
+}
+
+function técnica_StringEncoding(str) {
+  const encoded = [];
+  const key = Math.floor(Math.random() * 255);
+  for (let i = 0; i < str.length; i++) {
+    encoded.push(str.charCodeAt(i) ^ key);
+  }
+  const tableName = generateIlName();
+  return `local ${tableName}={${encoded.join(',')}} string.char(unpack(${tableName}))`;
+}
+
+function técnica_DynamicDispatch(handlers) {
+  const dispatchName = generateIlName();
+  let code = `local ${dispatchName}=function(idx)`;
+  code += `local handlers={${handlers.join(',')}}`;
+  code += `return handlers[idx]`;
+  code += `end`;
+  return code;
+}
+
+function técnica_CoroutineObfuscation(code) {
+  const coName = generateIlName();
+  return `local ${coName}=coroutine.wrap(function()${code}end) ${coName}()`;
+}
+
+// ==================== COMPONENTES DE VM (SIN COMENTARIOS) ====================
+
+function componente_InstructionDecoder() {
+  const decoderName = generateIlName();
+  return `
+    local ${decoderName}=function(instruction)
+      local op=string.sub(instruction,1,3)
+      local args={}
+      local count=0
+      for arg in string.gmatch(string.sub(instruction,4),"[^,]+") do
+        count=count+1
+        args[count]=arg
+      end
+      return op,args
+    end
+  `;
+}
+
+function componente_MemoryManager() {
+  const memName = generateIlName();
+  return `
+    local ${memName}={
+      heap={},
+      stack={},
+      globals={}
+    }
+    function ${memName}:alloc(size)
+      local addr=#self.heap+1
+      self.heap[addr]={}
+      return addr
+    end
+    function ${memName}:free(addr)
+      self.heap[addr]=nil
+    end
+    function ${memName}:push(value)
+      table.insert(self.stack,value)
+    end
+    function ${memName}:pop()
+      return table.remove(self.stack)
+    end
+  `;
+}
+
+function componente_ExecutionEngine() {
+  const engineName = generateIlName();
+  return `
+    local ${engineName}=function(bytecode)
+      local pc=1
+      while pc<=#bytecode do
+        local instr=bytecode[pc]
+        local op=instr[1]
+        local args=instr[2]
+        if op=="push" then
+          componente_MemoryManager:push(args[1])
+        elseif op=="call" then
+          local f=componente_MemoryManager:pop()
+          f()
+        elseif op=="add" then
+          local b=componente_MemoryManager:pop()
+          local a=componente_MemoryManager:pop()
+          componente_MemoryManager:push(a+b)
+        end
+        pc=pc+1
+      end
+    end
+  `;
+}
+
+function componente_GarbageCollector() {
+  const gcName = generateIlName();
+  return `
+    local ${gcName}={
+      threshold=1000,
+      count=0
+    }
+    function ${gcName}:collect()
+      self.count=self.count+1
+      if self.count>=self.threshold then
+        collectgarbage()
+        self.count=0
+      end
+    end
+  `;
+}
+
+function componente_ExceptionHandler() {
+  const ehName = generateIlName();
+  return `
+    local ${ehName}=function(err)
+      local stack=debug and debug.traceback or "No traceback"
+      return {
+        error=err,
+        traceback=stack
+      }
+    end
+  `;
 }
 
 // ==================== VM PRINCIPAL ====================
@@ -735,36 +285,76 @@ function buildVM(payloadStr) {
   const seed = Math.floor(Math.random() * 200) + 50;
   const saltVal = Math.floor(Math.random() * 250) + 1;
 
-  // Seleccionar VM aleatoria
-  const vmTypes = [
-    VM_StackBased,
-    VM_RegisterBased,
-    VM_ThreadBased,
-    VM_TableBased,
-    VM_MetatableBased,
-    VM_EnvironmentBased,
-    VM_ClosureBased,
-    VM_Hybrid
-  ];
-  
-  const selectedVM = vmTypes[Math.floor(Math.random() * vmTypes.length)];
-
   let vmCore = `
-    -- ===== COMPONENTES DE VM =====
     ${componente_InstructionDecoder()}
     ${componente_MemoryManager()}
-    ${componente_BytecodeCompiler()}
     ${componente_ExecutionEngine()}
-    ${componente_Debugger()}
-    ${componente_Profiler()}
     ${componente_GarbageCollector()}
     ${componente_ExceptionHandler()}
-    ${componente_Optimizer()}
-    ${componente_Linker()}
-    
-    -- ===== VM SELECCIONADA =====
-    ${selectedVM(payloadStr)}
+    local ${STACK}={}
+    local ${KEY}=${seed}
+    local ${SALT}=${saltVal}
   `;
+
+  const chunkSize = 15;
+  let chunks = [];
+  for (let i = 0; i < payloadStr.length; i += chunkSize) {
+    chunks.push(payloadStr.slice(i, i + chunkSize));
+  }
+
+  let poolVars = [];
+  let realOrder = [];
+  let totalChunks = chunks.length * 3;
+  let currentReal = 0;
+  let globalIndex = 0;
+
+  for (let i = 0; i < totalChunks; i++) {
+    let memName = generateIlName();
+    poolVars.push(memName);
+
+    if (currentReal < chunks.length && (Math.random() > 0.4 || (totalChunks - i) === (chunks.length - currentReal))) {
+      realOrder.push(i + 1);
+      let chunk = chunks[currentReal];
+      let encrypted = [];
+      for (let j = 0; j < chunk.length; j++) {
+        let enc = (chunk.charCodeAt(j) + seed + (globalIndex * saltVal)) % 256;
+        encrypted.push(enc);
+        globalIndex++;
+      }
+      vmCore += `local ${memName}={${encrypted.join(',')}}`;
+      currentReal++;
+    } else {
+      let fake = [];
+      for (let j = 0; j < Math.floor(Math.random() * 20) + 5; j++) {
+        fake.push(Math.floor(Math.random() * 255));
+      }
+      vmCore += `local ${memName}={${fake.join(',')}}`;
+    }
+  }
+
+  vmCore += `
+    local _pool={${poolVars.join(',')}}
+    local _order={${realOrder.join(',')}}
+    local _gIdx=0
+    for _, idx in ipairs(_order) do
+      for _, byte in ipairs(_pool[idx]) do
+        table.insert(${STACK}, string.char(math.floor((byte - ${KEY} - _gIdx * ${SALT}) % 256)))
+        _gIdx=_gIdx+1
+      end
+    end
+    local _e=table.concat(${STACK})
+    ${STACK}=nil
+  `;
+
+  const ASSERT = `assert`;
+  const LOADSTRING = `loadstring`;
+  const GAME = `game`;
+
+  if (payloadStr.includes("http")) {
+    vmCore += `${ASSERT}(${LOADSTRING}(${GAME}:HttpGet(_e)))()`;
+  } else {
+    vmCore += `${ASSERT}(${LOADSTRING}(_e))()`;
+  }
 
   return vmCore;
 }
@@ -772,27 +362,25 @@ function buildVM(payloadStr) {
 // ==================== CAPAS VM ====================
 
 function buildFragileVM(innerCode, depth = 0) {
-  const maxDepth = 5;
+  const maxDepth = 3;
   if (depth >= maxDepth) return innerCode;
 
   const vmName = generateIlName();
-  const handlerCount = Math.floor(Math.random() * 4) + 2;
+  const handlerCount = Math.floor(Math.random() * 3) + 2;
   const handlers = pickHandlers(handlerCount);
   const realIdx = Math.floor(Math.random() * handlerCount);
   const DISPATCH = generateIlName();
 
-  let out = `${vmName}={} `;
+  let out = `local ${vmName}={} `;
   
   for (let i = 0; i < handlers.length; i++) {
     if (i === realIdx) {
-      out += `${handlers[i]}=function(${vmName}) `;
+      out += `local ${handlers[i]}=function(${vmName}) `;
       out += `if ${vmName}[1]~=nil then error("corrupted") end `;
-      out += `_vmState="executing" `;
       out += buildFragileVM(innerCode, depth + 1);
-      out += `_vmState="done" end `;
+      out += ` end `;
     } else {
-      out += `${handlers[i]}=function(${vmName}) `;
-      out += `_vmState="fake" return nil end `;
+      out += `local ${handlers[i]}=function(${vmName}) return nil end `;
     }
   }
 
@@ -805,6 +393,64 @@ function buildFragileVM(innerCode, depth = 0) {
   out += técnica_ControlFlowFlattening(execBlocks);
   
   return out;
+}
+
+// ==================== ANTI-DEBUG (SIN COMENTARIOS) ====================
+
+function getAdvancedProtections() {
+  return `
+    local _t=os.clock()
+    for _=1,50000 do end
+    if os.clock()-_t>3 then while true do end end
+    if debug and debug.sethook then
+      debug.sethook(function()while true do end end,"l",2)
+    end
+    if debug and debug.getinfo then
+      local _stack=debug.getinfo(2)
+      if _stack and _stack.what~="main" and _stack.what~="Lua" then while true do end end
+    end
+    if getfenv and getfenv()~=_ENV then while true do end end
+  `;
+}
+
+// ==================== GENERADOR DE CÓDIGO BASURA ====================
+
+function generateAdvancedJunk(lines = 15) {
+  let j = '';
+  for (let i = 0; i < lines; i++) {
+    const varName = generateIlName();
+    const r = Math.random();
+    if (r < 0.3) j += `local ${varName}=function()${varName}()end `;
+    else if (r < 0.6) j += `local ${varName}=setmetatable({}, {__index=function()return nil end}) `;
+    else j += `local ${varName}=coroutine.wrap(function()coroutine.yield()end) `;
+  }
+  return j;
+}
+
+// ==================== DETECCIÓN DE MAPPINGS ====================
+
+function detectAndApplyMappings(code) {
+  const MAPEO = {
+    "ScreenGui":"Renaming","Frame":"String","TextLabel":"Table",
+    "TextButton":"Boolean","Humanoid":"Junk","Player":"Flow",
+    "RunService":"VM","TweenService":"Flow","Players":"Flow"
+  };
+  
+  let modified = code, headers = "";
+  
+  for (const [word, tech] of Object.entries(MAPEO)) {
+    const regex = new RegExp(`\\b${word}\\b`, "g");
+    if (regex.test(modified)) {
+      if (tech === "Renaming") { 
+        const v = generateIlName(); 
+        headers += `local ${v}="${word}";`; 
+        modified = modified.replace(regex, v);
+      } else if (tech === "String") {
+        modified = modified.replace(regex, técnica_StringEncoding(word));
+      }
+    }
+  }
+  return headers + modified;
 }
 
 // ==================== FUNCIÓN PRINCIPAL ====================
@@ -822,31 +468,33 @@ function obfuscate(sourceCode, settings = {}) {
     payloadToProtect = detectAndApplyMappings(sourceCode);
   }
 
-  // Aplicar técnicas de ofuscación
   let obfuscatedPayload = payloadToProtect;
-  
-  // Técnicas aplicadas secuencialmente
   obfuscatedPayload = técnica_StringSplitting(obfuscatedPayload);
   obfuscatedPayload = técnica_FunctionWrapping(obfuscatedPayload);
   obfuscatedPayload = técnica_SelfModifying(obfuscatedPayload);
-  obfuscatedPayload = técnica_EnvironmentSwapping(obfuscatedPayload);
   obfuscatedPayload = técnica_CoroutineObfuscation(obfuscatedPayload);
 
   let vm = buildVM(obfuscatedPayload);
   
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 2; i++) {
     vm = buildFragileVM(vm, i);
   }
 
   let finalCode = `
     ${HEADER}
     ${getAdvancedProtections()}
-    ${técnica_GarbageVars(15)}
-    ${generateAdvancedJunk(20)}
+    ${técnica_GarbageVars(10)}
+    ${generateAdvancedJunk(10)}
     ${vm}
-  `.replace(/\s+/g, " ").trim();
+  `;
 
-  const targetSize = 50 * 1024;
+  finalCode = finalCode.replace(/\s+/g, " ").trim();
+  
+  if (!finalCode.endsWith('end') && !finalCode.endsWith(')')) {
+    finalCode = finalCode + ' end';
+  }
+
+  const targetSize = 25 * 1024;
   let currentSize = Buffer.byteLength(finalCode, 'utf8');
 
   if (currentSize < targetSize) {
@@ -854,10 +502,14 @@ function obfuscate(sourceCode, settings = {}) {
     finalCode = `
       ${HEADER}
       ${getAdvancedProtections()}
-      ${técnica_GarbageVars(15)}
-      ${generateAdvancedJunk(20 + additionalLines)}
+      ${técnica_GarbageVars(10)}
+      ${generateAdvancedJunk(10 + additionalLines)}
       ${vm}
     `.replace(/\s+/g, " ").trim();
+    
+    if (!finalCode.endsWith('end') && !finalCode.endsWith(')')) {
+      finalCode = finalCode + ' end';
+    }
   }
 
   return finalCode;
