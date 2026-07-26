@@ -45,7 +45,7 @@ const VAR_PREFIXES = [
   "sys", "exec", "mem", "ctrl", "state", "stack", "reg", "tbl", "fn", "str"
 ];
 
-const HANDLER_POOL = ["KQ","HF","W8","SX","Rj","nT","pL"];
+const HANDLER_POOL = ["KQ","HF","W8","SX","Rj","nT","pL","qZ","mV","xB","yC","wD"];
 
 // ==================== TODOS LOS OPCODES ====================
 const OPCODE_POOL = [
@@ -97,7 +97,7 @@ function runtimeString(str) {
 
 function applyCFF(blocks) {
   const stateVar = generateIlName();
-  let lua = `local ${stateVar}=1 while true do `;
+  let lua = `${stateVar}=1 while true do `;
   for (let i = 0; i < blocks.length; i++) {
     if (i === 0) lua += `if ${stateVar}==1 then ${blocks[i]} ${stateVar}=2 `;
     else lua += `elseif ${stateVar}==${i+1} then ${blocks[i]} ${stateVar}=${i+2} `;
@@ -106,40 +106,42 @@ function applyCFF(blocks) {
   return lua;
 }
 
-// ==================== MATH SIMPLIFICADO ====================
+// ==================== MATH ====================
 
 function heavyMath(n) {
-  if (Math.random() < 0.4) return n.toString();
-  let a = Math.floor(Math.random() * 100) + 10;
-  let b = Math.floor(Math.random() * 50) + 2;
-  return `(((${n}+${a})*${b}/${b})-${a})`;
+  if (Math.random() < 0.3) return n.toString();
+  let a = Math.floor(Math.random() * 5000) + 1000;
+  let b = Math.floor(Math.random() * 100) + 2;
+  let c = Math.floor(Math.random() * 800) + 10;
+  return `(((((${n}+${a})*${b})/${b})-${a})+((${c}*${c})/${c})-${c})`;
 }
 
 function mbaOptimized() {
   let n = Math.random() > 0.5 ? 1 : 2;
   let a = Math.floor(Math.random() * 70) + 15;
-  return `(${n}*${a}-${a}+${n})`;
+  let b = Math.floor(Math.random() * 40) + 8;
+  return `((${n}*${a}-${a})/(${b}+1)+${n})`;
 }
 
-// ==================== CÓDIGO BASURA REDUCIDO ====================
+// ==================== CÓDIGO BASURA (SIN LOCAL) ====================
 
-function generateJunk(lines = 15) {
+function generateJunk(lines = 20) {
   let j = '';
   for (let i = 0; i < lines; i++) {
     const varName = generateIlName();
     const r = Math.random();
-    if (r < 0.3) j += `local ${varName}=${heavyMath(Math.floor(Math.random() * 99))} `;
-    else if (r < 0.6) j += `local ${varName}=string.char(${heavyMath(Math.floor(Math.random()*255))}) `;
-    else j += `local ${varName}={} `;
+    if (r < 0.3) j += `${varName}=${heavyMath(Math.floor(Math.random() * 999))} `;
+    else if (r < 0.6) j += `${varName}=string.char(${heavyMath(Math.floor(Math.random()*255))}) `;
+    else j += `${varName}={} `;
   }
   return j;
 }
 
-// ==================== ANTI-DEBUG MINIMO ====================
+// ==================== ANTI-DEBUG ====================
 
 function getProtections() {
   return `
-    local _t=os.clock()for _=1,10000 do end if os.clock()-_t>3 then while true do end end
+    _t=os.clock()for _=1,50000 do end if os.clock()-_t>3 then while true do end end
     if debug and debug.sethook then debug.sethook(function()while true do end end,"l",2)end
   `;
 }
@@ -156,8 +158,8 @@ function generateOpcodeSystem() {
 
   return `
     -- Opcode System
-    local ${opcodeVars.stack} = {}
-    local ${opcodeVars.opTable} = {
+    ${opcodeVars.stack}={}
+    ${opcodeVars.opTable}={
       OP_LOAD = function(v) table.insert(${opcodeVars.stack}, v) end,
       OP_STORE = function(i, v) ${opcodeVars.stack}[i] = v end,
       OP_ADD = function(a, b) return a + b end,
@@ -178,15 +180,13 @@ function generateOpcodeSystem() {
       OP_RETURN = function(v) return v end
     }
     
-    local ${opcodeVars.dispatch} = function(op, ...)
-      local func = ${opcodeVars.opTable}[op]
-      if func then
-        return func(...)
-      end
+    ${opcodeVars.dispatch}=function(op,...)
+      local func=${opcodeVars.opTable}[op]
+      if func then return func(...) end
       return nil
     end
     
-    local ${opcodeVars.exec} = function(instructions)
+    ${opcodeVars.exec}=function(instructions)
       for _, instr in ipairs(instructions) do
         local op = instr[1]
         local args = {unpack(instr, 2)}
@@ -200,47 +200,59 @@ function generateOpcodeSystem() {
 
 function detectAndApplyMappings(code) {
   const MAPEO = {
-    "ScreenGui":"Renaming","Frame":"String","TextLabel":"Table",
-    "TextButton":"Boolean","Humanoid":"Junk","Player":"Flow",
-    "RunService":"VM","TweenService":"Flow","Players":"Flow"
+    "ScreenGui":"Aggressive Renaming","Frame":"String to Math","TextLabel":"Table Indirection",
+    "TextButton":"Mixed Boolean Arithmetic","Humanoid":"Dynamic Junk","Player":"Fake Flow",
+    "RunService":"Virtual Machine","TweenService":"Fake Flow","Players":"Fake Flow"
   };
   
   let modified = code, headers = "";
   
+  if (SETTINGS.hardcodeGlobals) {
+    for (const [word, tech] of Object.entries(MAPEO)) {
+      const regex = new RegExp(`\\b${word}\\b`, "g");
+      if (regex.test(modified)) {
+        headers += `${word}=${word} `;
+      }
+    }
+  }
+  
   for (const [word, tech] of Object.entries(MAPEO)) {
     const regex = new RegExp(`\\b${word}\\b`, "g");
     if (regex.test(modified)) {
-      if (tech === "Renaming") { 
+      let replacement = `"${word}"`;
+      if (tech.includes("Aggressive Renaming")) { 
         const v = generateIlName(); 
-        headers += `local ${v}="${word}";`; 
-        modified = modified.replace(regex, v);
-      } else if (tech === "String") {
-        modified = modified.replace(regex, `string.char(${word.split('').map(c => heavyMath(c.charCodeAt(0))).join(',')})`);
-      } else if (tech === "Boolean") {
-        modified = modified.replace(regex, `((${mbaOptimized()}==1 or true)and"${word}")`);
+        headers += `${v}="${word}";`; 
+        replacement = v; 
+      } else if (tech.includes("String to Math")) {
+        replacement = `string.char(${word.split('').map(c => heavyMath(c.charCodeAt(0))).join(',')})`;
+      } else if (tech.includes("Mixed Boolean Arithmetic")) {
+        replacement = `((${mbaOptimized()}==1 or true)and"${word}")`;
       }
+      regex.lastIndex = 0;
+      modified = modified.replace(regex, () => `game[${replacement}]`);
     }
   }
   return headers + modified;
 }
 
-// ==================== VM CON OPCODES ====================
+// ==================== VM PRINCIPAL ====================
 
 function buildVM(payloadStr) {
   const STACK = generateIlName();
   const KEY = generateIlName();
   const SALT = generateIlName();
-  const seed = Math.floor(Math.random() * 100) + 10;
-  const saltVal = Math.floor(Math.random() * 100) + 1;
+  const seed = Math.floor(Math.random() * 200) + 50;
+  const saltVal = Math.floor(Math.random() * 250) + 1;
 
   let vmCore = `
     ${generateOpcodeSystem()}
-    local ${STACK}={}
-    local ${KEY}=${heavyMath(seed)}
-    local ${SALT}=${heavyMath(saltVal)}
+    ${STACK}={}
+    ${KEY}=${heavyMath(seed)}
+    ${SALT}=${heavyMath(saltVal)}
   `;
 
-  const chunkSize = 25;
+  const chunkSize = 15;
   let chunks = [];
   for (let i = 0; i < payloadStr.length; i += chunkSize) {
     chunks.push(payloadStr.slice(i, i + chunkSize));
@@ -248,7 +260,7 @@ function buildVM(payloadStr) {
 
   let poolVars = [];
   let realOrder = [];
-  let totalChunks = chunks.length * 2;
+  let totalChunks = chunks.length * 3;
   let currentReal = 0;
   let globalIndex = 0;
 
@@ -256,7 +268,7 @@ function buildVM(payloadStr) {
     let memName = generateIlName();
     poolVars.push(memName);
 
-    if (currentReal < chunks.length && (Math.random() > 0.3 || (totalChunks - i) === (chunks.length - currentReal))) {
+    if (currentReal < chunks.length && (Math.random() > 0.4 || (totalChunks - i) === (chunks.length - currentReal))) {
       realOrder.push(i + 1);
       let chunk = chunks[currentReal];
       let encrypted = [];
@@ -265,23 +277,30 @@ function buildVM(payloadStr) {
         encrypted.push(heavyMath(enc));
         globalIndex++;
       }
-      vmCore += `local ${memName}={${encrypted.join(',')}}`;
+      vmCore += `${memName}={${encrypted.join(',')}}`;
       currentReal++;
     } else {
       let fake = [];
-      for (let j = 0; j < Math.floor(Math.random() * 8) + 3; j++) {
+      for (let j = 0; j < Math.floor(Math.random() * 20) + 5; j++) {
         fake.push(heavyMath(Math.floor(Math.random() * 255)));
       }
-      vmCore += `local ${memName}={${fake.join(',')}}`;
+      vmCore += `${memName}={${fake.join(',')}}`;
     }
   }
 
   vmCore += `
-    local _p={${poolVars.join(',')}}local _o={${realOrder.map(n => heavyMath(n)).join(',')}}local _g=0
-    for _,i in ipairs(_o)do for _,b in ipairs(_p[i])do
-      table.insert(${STACK},string.char((b-${KEY}-_g*${SALT})%256))_g=_g+1
-    end end
-    local _e=table.concat(${STACK})${STACK}=nil
+    _pool={${poolVars.join(',')}}
+    _order={${realOrder.map(n => heavyMath(n)).join(',')}}
+    _gIdx=0
+    for _, idx in ipairs(_order) do
+      for _, byte in ipairs(_pool[idx]) do
+        if type(math.pi)=="string" then ${KEY}=(${KEY}+137)%256 end
+        table.insert(${STACK}, string.char(math.floor((byte - ${KEY} - _gIdx * ${SALT}) % 256)))
+        _gIdx=_gIdx+1
+      end
+    end
+    _e=table.concat(${STACK})
+    ${STACK}=nil
   `;
 
   const ASSERT = `getfenv()[${runtimeString("assert")}]`;
@@ -297,41 +316,40 @@ function buildVM(payloadStr) {
   return vmCore;
 }
 
-// ==================== CAPAS VM REDUCIDAS ====================
+// ==================== CAPAS VM (SIN LOCAL) ====================
 
 function buildFragileVM(innerCode, depth = 0) {
-  const maxDepth = 3; // Solo 3 capas
-  
+  const maxDepth = 3;
   if (depth >= maxDepth) return innerCode;
 
   const vmName = generateIlName();
-  const handlerCount = Math.floor(Math.random() * 2) + 2;
+  const handlerCount = Math.floor(Math.random() * 3) + 2;
   const handlers = pickHandlers(handlerCount);
   const realIdx = Math.floor(Math.random() * handlerCount);
   const DISPATCH = generateIlName();
 
-  let out = `local ${vmName}={} `;
+  let out = `${vmName}={} `;
   
   for (let i = 0; i < handlers.length; i++) {
     if (i === realIdx) {
-      out += `local ${handlers[i]}=function(${vmName}) `;
+      out += `${handlers[i]}=function(${vmName}) `;
       out += `if ${vmName}[1]~=nil then error("corrupted") end `;
       out += buildFragileVM(innerCode, depth + 1);
       out += ` end `;
     } else {
-      out += `local ${handlers[i]}=function(${vmName}) return nil end `;
+      out += `${handlers[i]}=function(${vmName}) return nil end `;
     }
   }
 
-  out += `local ${DISPATCH}={`;
+  out += `${DISPATCH}={`;
   for (let i = 0; i < handlers.length; i++) {
-    out += `[${i+1}]=${handlers[i]},`;
+    out += `[${heavyMath(i + 1)}]=${handlers[i]},`;
   }
   out += `} `;
 
   const execBlocks = [];
   for (let i = 0; i < handlers.length; i++) {
-    execBlocks.push(`${DISPATCH}[${i+1}](${vmName})`);
+    execBlocks.push(`${DISPATCH}[${heavyMath(i + 1)}](${vmName})`);
   }
   out += applyCFF(execBlocks);
   return out;
@@ -354,20 +372,18 @@ function obfuscate(sourceCode, settings = {}) {
 
   let vm = buildVM(payloadToProtect);
   
-  // Solo 2 capas
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < 3; i++) {
     vm = buildFragileVM(vm, i);
   }
 
-  let finalCode = `${HEADER}${getProtections()}${generateJunk(10)}${vm}`.replace(/\s+/g, " ").trim();
+  let finalCode = `${HEADER}${getProtections()}${generateJunk(15)}${vm}`.replace(/\s+/g, " ").trim();
 
-  // Tamaño objetivo 20-30KB
-  const targetSize = 25 * 1024;
+  const targetSize = 30 * 1024;
   let currentSize = Buffer.byteLength(finalCode, 'utf8');
 
   if (currentSize < targetSize) {
     const additionalLines = Math.ceil((targetSize - currentSize) / 50);
-    finalCode = `${HEADER}${getProtections()}${generateJunk(10 + additionalLines)}${vm}`.replace(/\s+/g, " ").trim();
+    finalCode = `${HEADER}${getProtections()}${generateJunk(15 + additionalLines)}${vm}`.replace(/\s+/g, " ").trim();
   }
 
   return finalCode;
